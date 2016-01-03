@@ -1,0 +1,16 @@
+config.json
+__pycache__
+log
+plugins/*.ign.py
+config/
+www/
+*.db
+*.json
+*.c
+antispam.py
+down.py
+pushbullet.py
+symmetry.py
+telegram.py
+ws.py
+
