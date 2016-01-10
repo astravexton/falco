@@ -1,3 +1,14 @@
+Portions of falco (log.py, falco.py) uses code from the PyLink project,
+
+Copyright (c) 2015-2016, James Lu <glolol@overdrivenetworks.com>
+
+This code is available under the Mozilla Public License (MPL) version 2.0.
+See the LICENSE.MPL2 file for complete license text.
+
+Anything else is should use the MIT license, shown below.
+
+----
+
 The MIT License (MIT)
 
 Copyright (c) 2016 Nathan
