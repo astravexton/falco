@@ -8,7 +8,7 @@ import utils
 import imp
 from multiprocessing import Process
 import websocket
-import random, shelve
+import random, shelve, base64
 
 global reload_plugins
 global config_file, conf
@@ -181,6 +181,8 @@ class IRC():
         if self.conf.get("password"):
             self.send("PASS {}".format(self.conf["password"]))
         self.send("USER {} 0 * :{}".format(self.user, self.gecos))
+        if self.conf.get("sasl"):
+            self.send("CAP REQ :multi-prefix sasl")
         self.send("NICK {}".format(self.nick))
         self.schedulePing()
         self.ibuffer = ""
@@ -225,6 +227,10 @@ class IRC():
                             # ['PING', ':blah']
                             #self.send("LUSERS")
                             self.send("PONG {}".format(args[1]))
+
+                        elif args[0] == "AUTHENTICATE":
+                            func = globals()["handle_AUTHENTICATE"]
+                            func(self, user, args)
 
                         if args[1] == "PONG":
                             self.pingtime = int(time.time() - self.lastping)
