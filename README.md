@@ -21,16 +21,11 @@ IRC bot that does stuff
     "admins": ["*!falco@*"],
     "ops": [],
     "autojoin": ["#chat"],
-    "pushbullet": "",
-    "pushbullet_chan": "",
     "ignored": [],
     "filter": {},
     "autokick": {}
 }
 ```
-
-
-Most of these options you won't need.
 
 To run the bot, type
 ```
