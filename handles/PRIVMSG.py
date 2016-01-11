@@ -7,7 +7,6 @@ def handle_NOTICE(irc, source, args):
     ident = source.split("!")[1].split("@")[0]
     address = source.split("@")[1]
     chan, message = args
-    print(nick,message)
 
     #if nick == "NickServ" and "This nickname is registered." in message:
     #    if "nickserv_password" in irc.conf:
@@ -65,33 +64,6 @@ def handle_PRIVMSG(irc, source, args):
                 c.start()
                 #return func(irc, source, chan, m.groups())
 
-
-        # TODO: move relay to own plugin
-        if irc.relay_enabled == True:
-            if irc.relay_socket.connected == False:
-                try:
-                    irc.relay_socket.connect("ws://127.0.0.1:8888/ws/")
-                    for chan in irc.relay_chans:
-                        irc.relay_socket.send("TOPIC :{}".format(
-                            irc.channels[chan]["topic"] if "topic" in irc.channels[chan] \
-                                else "No topic has been set for {}".format(chan)))
-
-                        nicks = " ".join(list(nick for nick in irc.channels[chan]["nicks"].keys()))
-                        irc.relay_socket.send("NICKS {}".format(nicks))
-                except ConnectionRefusedError:
-                    irc.relay_enabled = False
-            if chan != irc.nick and chan in irc.relay_chans:
-                try:
-                    irc.relay_socket.send(escape(_format))
-                except BrokenPipeError as e:
-                    for chan in irc.relay_chans:
-                        #irc.msg(chan, "Relay disconnected: {}".format(e))
-                        irc.relay_enabled == False
-                        irc.relay_socket.close()
-        elif irc.relay_enabled == False and irc.relay_socket.connected == True:
-            irc.relay_socket.send("Relay disconnected")
-            irc.srelay_socket.close()
-
         #text = re.sub(r"\$[a-z]+", subs, message, flags=re.IGNORECASE)
         #if text != message and message[0] not in ".!@:":
         #    irc.msg(chan, "│ "+text, reply="PRIVMSG")
@@ -127,9 +99,3 @@ def handle_PRIVMSG(irc, source, args):
                 #irc.nicks[nick]["lastmsg"] = message
             except:
                 pass
-
-        # astra!nathan@meetmehereonirclo.lol ['#chat', 'test'] test #chat
-        if source.startswith("MCRelay!"):
-            msg = message.split("> ",1)
-            if msg[1].startswith("`"):
-                irc.send("PRIVMSG {} :{}".format(chan, msg[1]))
