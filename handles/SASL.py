@@ -11,11 +11,12 @@ def handle_AUTHENTICATE(irc, source, args):
 
 def handle_903(irc, source, args):
     irc.send("CAP END")
+    for chan in irc.autojoin:
+        irc.send("JOIN {}".format(chan))
 
 def handle_904(irc, source, args):
     sys.exit(1)
 
 def handle_905(irc, source, args):
     sys.exit(1)
-
 
