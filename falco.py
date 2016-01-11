@@ -62,9 +62,6 @@ def reload_config(irc):
         irc.conf_mtime = os.stat(config_file).st_mtime
         irc.conf = conf
         irc.reloadConfig()
-        #irc.conf = conf
-        #irc.bot_prefix = irc.conf["prefix"]
-        #irc.bot_admins = irc.conf["admins"]
         log.debug("(%s) Reloaded config", irc.netname)
 
 log.info("Starting falco")
@@ -110,21 +107,6 @@ class IRC():
         self.title_snarfer_ignored_urls         = []
 
         self.repls                              = None
-
-        self.relay_enabled                      = False
-        self.relay_socket                       = websocket.WebSocket()
-        self.relay_chans                        = []
-
-        self.pushbullet_api_key                 = self.conf["pushbullet"]
-        self.pushbullet_channel                 = self.conf["pushbullet_chan"]
-        self.pushbullet_socket                  = None
-        self.pushbullet_users                   = {"moo@gmail.com": "falco"}
-
-        self.telegram_enabled                   = False
-        self.telegram_group_id                  = None
-        self.telegram_sender                    = None
-        self.telegram_receiver                  = None
-        self.telegram_channel                   = None
 
         self.pingTimer                          = None
         self.pingtime                           = time.time()
@@ -184,7 +166,8 @@ class IRC():
         self.shelve["nicks"] = self.nicks
         self.shelve["admins"] = self.admins
         self.shelve["channels"] = self.channels
-        self.shelve.sync()
+        self.shelve.sync() # BUG: this ends up creating very large files for some reason
+                           # 5.9G Jan 11 18:05 falco-freenode.db
         self.send("PING {}".format(time.time()))
         self.pingTimer = threading.Timer(self.pingfreq, self.schedulePing)
         self.pingTimer.daemon = True
