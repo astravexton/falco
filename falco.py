@@ -96,8 +96,7 @@ class IRC():
         self.color                              = 14
         self.buffermaxlen                       = 16003
         self.shelve                             = shelve.open("falco-{}.db".format(self.netname), writeback=True)
-        try: self.admins = self.shelve["admins"]
-        except: self.admins = self.conf["admins"]
+        self.admins = self.conf["admins"]
         try: self.nicks = self.shelve["nicks"]
         except: self.nicks = {}
         try: self.channels = self.shelve["channels"]
@@ -123,7 +122,7 @@ class IRC():
         self.gecos                              = self.conf["gecos"]
         self.setmodes                           = self.conf["modes"]
         self.prefix                             = self.conf["prefix"]
-        #self.admins                             = self.conf["admins"]
+        self.admins                             = self.conf["admins"]
         self.autojoin                           = self.conf["autojoin"]
         self.ignored                            = self.conf["ignored"]
         self.filter                             = self.conf["filter"]
@@ -164,7 +163,6 @@ class IRC():
 
     def schedulePing(self):
         self.shelve["nicks"] = self.nicks
-        self.shelve["admins"] = self.admins
         self.shelve["channels"] = self.channels
         self.shelve.sync() # BUG: this ends up creating very large files for some reason
                            # 5.9G Jan 11 18:05 falco-freenode.db

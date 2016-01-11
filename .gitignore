@@ -6,11 +6,5 @@ config/
 www/
 *.db
 *.json
-*.c
+ircize
 antispam.py
-down.py
-pushbullet.py
-symmetry.py
-telegram.py
-ws.py
-
