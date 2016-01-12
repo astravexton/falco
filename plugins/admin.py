@@ -103,7 +103,7 @@ def ban(irc, source, msgtarget, args):
 
         irc.chanmodes[chan].append("MODE {} +b {}".format(chan, bmask))
         if "!" not in user or "@" not in user or "*" not in user:
-            irc.chanmodes[chan].append("KICK {} {} :Goodbye".format(chan, user))
+            irc.chanmodes[chan].append("{} {} {} :Goodbye".format(irc.conf["kickmethod"], chan, user))
         irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
 
 @add_cmd
