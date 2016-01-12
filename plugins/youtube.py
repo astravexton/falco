@@ -9,7 +9,7 @@ def youtube(irc, source, msgtarget, args):
     r = requests.get("https://m.youtube.co.uk/results", params={"search_query":args,"app":"m"}).content.decode()
     videos = re.findall(youtube_regex, r)
     irc.msg(msgtarget, "https://youtu.be/{} \x0304│\x03 {} \x0304│\x03 {} \x0304│\x03 {} \x0304│\x03 {}".format(
-            videos[0][0].split("=")[-1],HTMLParser().unescape(videos[0][2]),videos[0][4] or "#Live",HTMLParser().unescape(videos[0][6][3:]),videos[0][8]))
+            videos[0][0].split("=")[-1],HTMLParser().unescape(videos[0][2]),videos[0][4] or "#Live",HTMLParser().unescape(videos[0][6]),videos[0][8]))
 
 add_cmd(youtube, "yt")
 add_cmd(youtube, "youtube")
