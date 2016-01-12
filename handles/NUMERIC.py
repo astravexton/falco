@@ -143,10 +143,8 @@ def handle_MODE(irc, source, args):
             if mode[0] not in ["b", "q", "e", "I", "o", "h", "v"]:
                 irc.channels[target]["modes"].append(mode)
             else:
-                print(mode)
                 if mode[0] in ["o", "v", "h"]:
                     #if irc.channels"][target]["nicks"][mode[1]]
-                    print("Giving {} MODE {} on {}".format(mode[1], mode[0], target))
                     irc.channels[target]["nicks"][mode[1]] = mode[0]
 
         for mode in parsed_modes["rem"]:
