@@ -26,7 +26,8 @@ IRC bot that does stuff
     "autojoin": ["#chat"],
     "ignored": [],
     "filter": {},
-    "autokick": {}
+    "autokick": {},
+    "kickmethod": "KICK"
 }
 ```
 
