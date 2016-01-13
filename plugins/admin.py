@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 def stalk(irc, source, msgtarget, args):
     if isAdmin(irc, source):
         try:
-            irc.msg(msgtarget, "{} is in {}".format(", ".join(irc.nicks[args]["channels"])))
+            irc.msg(msgtarget, "{} is in {}".format(args, ", ".join(irc.nicks[args]["channels"])))
         except:
             irc.msg(msgtarget, "I don't see that person or something has broken")
 
