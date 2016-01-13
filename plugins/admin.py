@@ -7,6 +7,14 @@ import wikipedia, fnmatch
 from bs4 import BeautifulSoup
 
 @add_cmd
+def stalk(irc, source, msgtarget, args):
+    if isAdmin(irc, source):
+        try:
+            irc.msg(msgtarget, "{} is in {}".format(", ".join(irc.nicks[args]["channels"])))
+        except:
+            irc.msg(msgtarget, "I don't see that person or something has broken")
+
+@add_cmd
 def info(irc, source, msgtarget, args):
     """info -- returns "Created by nathan/doge, you can find me in ##doge on irc.freenode.net or #programming on irc.subluminal.net"."""
     irc.msg(msgtarget, "Created by nathan/doge, you can find me in ##doge on irc.freenode.net or #programming on irc.subluminal.net")
