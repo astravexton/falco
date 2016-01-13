@@ -95,12 +95,15 @@ class IRC():
         self.hasink                             = True
         self.color                              = 14
         self.buffermaxlen                       = 16003
-        self.shelve                             = shelve.open("falco-{}.db".format(self.netname), writeback=True)
-        self.admins = self.conf["admins"]
-        try: self.nicks = self.shelve["nicks"]
-        except: self.nicks = {}
-        try: self.channels = self.shelve["channels"]
-        except: self.channels = {}
+        self.admins                             = self.conf["admins"]
+        self.nicks                              = {}
+        self.channels                           = {}
+        #self.shelve                             = shelve.open("falco-{}.db".format(self.netname), writeback=True)
+        #self.admins = self.conf["admins"]
+        #try: self.nicks = self.shelve["nicks"]
+        #except: self.nicks = {}
+        #try: self.channels = self.shelve["channels"]
+        #except: self.channels = {}
 
         self.title_snarfer_allowed              = []
         self.title_snarfer_ignored_urls         = []
@@ -162,10 +165,10 @@ class IRC():
             log.debug("(%s) Dropping message %r; network isn't connected!", self.netname, stripped_data)
 
     def schedulePing(self):
-        self.shelve["nicks"] = self.nicks
-        self.shelve["channels"] = self.channels
-        self.shelve.sync() # BUG: this ends up creating very large files for some reason
-                           # 5.9G Jan 11 18:05 falco-freenode.db
+        #self.shelve["nicks"] = self.nicks
+        #self.shelve["channels"] = self.channels
+        #self.shelve.sync() # BUG: this ends up creating very large files for some reason
+        #                   # 5.9G Jan 11 18:05 falco-freenode.db
         self.send("PING {}".format(time.time()))
         self.pingTimer = threading.Timer(self.pingfreq, self.schedulePing)
         self.pingTimer.daemon = True
