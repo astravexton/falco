@@ -78,6 +78,8 @@ def handle_PRIVMSG(irc, source, args):
         if m:
             command, args = m.groups()
 
+            if command in irc.conf["blacklisted_commands"][chan]:
+                return
             try:
                 func = utils.bot_commands[command]
             except KeyError:
