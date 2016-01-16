@@ -27,7 +27,8 @@ IRC bot that does stuff
     "ignored": [],
     "filter": {},
     "autokick": {},
-    "kickmethod": "KICK"
+    "kickmethod": "KICK",
+    "blacklisted_commands": {}
 }
 ```
 
