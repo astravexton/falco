@@ -137,6 +137,7 @@ class IRC():
 
     def msg(self, target, message, reply=None):
         reply = self.reply if not reply else reply
+        message = message.replace("http", "ht\x0ftp")
         for filter in self.filter:
             message = re.sub(filter, "", message, flags=re.IGNORECASE)
         if self.hasink:
