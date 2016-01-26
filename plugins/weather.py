@@ -3,10 +3,14 @@ import requests, json
 
 def main(irc):
     try:
+        os.mkdir("data")
+    except:
+        pass
+    try:
         irc.weather = json.load(open("data/"+irc.server+"-weather.json"))
     except:
         irc.weather = {}
-        f = open(irc.server+"-weather.json", "w")
+        f = open("data/"+irc.server+"-weather.json", "w")
         f.write("{}")
         f.close()
 
