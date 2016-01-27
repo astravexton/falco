@@ -453,46 +453,6 @@ def search(q, n=0):
     else:
         return r.statuc_code
 
-class Repl(code.InteractiveConsole):
-    def __init__(self, irc):
-        code.InteractiveConsole.__init__(self, {
-                "falco": irc,
-                "globals": globals})
-        self.irc = irc
-        self.channel = None
-        self.buf = ""
-
-    def write(self, data):
-        self.buf += data
-
-    def flush(self):
-        msg = self.buf.rstrip("\n")
-        if len(msg) > 0:
-            self.irc.msg(self.channel, msg)
-        self.buf = ""
-
-    def run(self, channel, code):
-        self.channel = channel
-        sys.stdout = self
-        self.push(code)
-        sys.stdout = sys.__stdout__
-        self.flush()
-
-    def showtraceback(self):
-        type, value, lasttb = sys.exc_info()
-        self.irc.msg(self.channel, "{0}: {1}".format(type.__name__, value))
-
-    def showsyntaxerror(self, filename):
-        self.showtraceback()
-
-def repl(irc, source, msgtarget, args):
-    if isAdmin(irc, source):
-        if irc.repls is None:
-            irc.repls = Repl(irc)
-        irc.repls.run(msgtarget, args)
-
-add_cmd(repl, ">>")
-
 def filter(irc, source, msgtarget, args):
     if isAdmin(irc, source):
         if args.lower().strip() not in irc.filter:
