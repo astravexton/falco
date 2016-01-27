@@ -187,14 +187,8 @@ def getNewNick(irc, nick=None, new=True):
     if not nick:
         nick = irc.nick
 
-    if "-" in nick:
-        irc.nick = "{}-{}".format(nick.split("-")[0], int(nick.split("-")[1])+1)
-
-    elif "-" not in nick and new:
-        irc.nick = "{}-0".format(nick)
-
-    elif not new:
-        irc.nick = nick
+    irc.oldnick = irc.nick
+    irc.nick = irc.oldnick+"_"
 
     irc.send("NICK {}".format(irc.nick))
 
