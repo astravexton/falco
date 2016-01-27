@@ -68,9 +68,11 @@ log.info("Starting falco")
 
 mtimes = dict()
 
-class IRC():
+class IRC(threading.Thread):
 
     def __init__(self, conf):
+        threading.Thread.__init__(self)
+        self.setDaemon                          = True
         self.conf                               = conf
         self.conf_mtime                         = os.stat(config_file).st_mtime
         self.netname                            = self.conf["netname"]
@@ -114,8 +116,8 @@ class IRC():
         self.pingtime                           = time.time()
         self.lastping                           = self.pingtime
         self.reloadConfig()
-        if self.conf["active"]:
-            self.run()
+        #if self.conf["active"]:
+        #    self.run()
 
     def reloadConfig(self):
 
@@ -133,7 +135,97 @@ class IRC():
         self.ops                                = self.conf.get("ops", [])
 
     def run(self):
+
         self.connect()
+
+        while self.connected:
+            try:
+                data = utils.decode(self.socket.recv(2048))
+                self.ibuffer += data
+                while "\r\n" in self.ibuffer:
+                    reload_handlers()
+                    reload_plugins(self)
+                    reload_config(self)
+
+                    line, self.ibuffer = self.ibuffer.split("\r\n", 1)
+                    line = line.strip()
+                    log.debug("(%s) -> %s", self.netname, line)
+                    self.rx += len(line)
+                    self.rxmsgs += 1
+
+                    args = line.split(" ")
+
+                    if not args:
+                        return
+
+                    elif args[0].startswith(":NickServ!") and "identify" in args:
+                        self.send("PRIVMSG NickServ :IDENTIFY {}".format(self.conf["nickserv_password"]))
+                        time.sleep(3)
+
+                    elif args[0].startswith(":NickServ!") and "identified" in args:
+                        # [':NickServ!NickServ@services.', 'NOTICE', 'falco', ':You', 'are', 'now', 'identified', 'for', '\x02falco\x02.']
+                        for chan in self.autojoin:
+                            self.send("JOIN {}".format(chan))
+
+                    elif args[0] == "ERROR":
+                        # ['ERROR', ':Closing', 'Link:', 'falco[meetmehereonirclo.lol]', '(Excess', 'Flood)']
+                        if args[4] == "(Excess" and args[5] == "Flood)":
+                            self.reconnect()
+
+                    elif args[0] == "PING":
+                        # ['PING', ':blah']
+                        #self.send("LUSERS")
+                        self.send("PONG {}".format(args[1]))
+
+                    elif args[0] == "AUTHENTICATE":
+                        func = globals()["handle_AUTHENTICATE"]
+                        func(self, user, args)
+
+                    if args[1] == "PONG":
+                        self.pingtime = int(time.time() - self.lastping)
+                        self.lastping = time.time()
+
+                        if self.pingtime - self.pingfreq > self.pingwarn:
+                            log.warn("(%s) Lag: %s seconds", self.netname,
+                                        round(self.pingtime - self.pingfreq, 3))
+
+                        if self.pingtime - self.pingfreq > self.pingtimeout:
+                            self.disconnect("Ping timeout: {} seconds".format(
+                                    round(self.pingtime - self.pingfreq)), terminate=False)
+                            self.connect()
+
+                    try:
+                        real_args = []
+                        for arg in args:
+                            real_args.append(arg)
+                            if arg.startswith(':') and args.index(arg) != 0:
+                                index = args.index(arg)
+                                arg = args[index:]
+                                arg = ' '.join(arg)[1:]
+                                real_args = args[:index]
+                                real_args.append(arg)
+                                break
+
+                        real_args[0] = real_args[0].split(':', 1)[1]
+                        args = real_args
+
+                        user = args[0]
+                        command = args[1]
+                        args = args[2:]
+
+                        try:
+                            func = globals()['handle_'+command]
+                        except KeyError as e:
+                            pass
+                        else:
+                            func(self, user, args)
+
+                    except IndexError:
+                        continue
+
+            except KeyboardInterrupt:
+                #self.shelve.close()
+                self.disconnect("CTRL-C at console.")
 
     def msg(self, target, message, reply=None):
         reply = self.reply if not reply else reply
@@ -149,8 +241,8 @@ class IRC():
     def kick(self, chan, target, message="Goodbye"):
         self.send("KICK {} {} :{}".format(chan, target, message))
 
-    def join(self, chan):
-        self.send("JOIN {}".format(chan))
+    #def join(self, chan):
+    #    self.send("JOIN {}".format(chan))
 
     def send(self, data):
         data = data.replace('\n', ' ').replace("\a", "")
@@ -192,101 +284,6 @@ class IRC():
         self.ibuffer = ""
         log.debug("(%s) Running main loop", self.netname)
         self.connected = True
-        while True:
-            if self.connected:
-                try:
-                    data = utils.decode(self.socket.recv(2048))
-                    self.ibuffer += data
-                    while "\r\n" in self.ibuffer:
-                        reload_handlers()
-                        reload_plugins(self)
-                        reload_config(self)
-
-                        line, self.ibuffer = self.ibuffer.split("\r\n", 1)
-                        line = line.strip()
-                        log.debug("(%s) -> %s", self.netname, line)
-                        self.rx += len(line)
-                        self.rxmsgs += 1
-
-                        args = line.split(" ")
-
-                        if not args:
-                            return
-
-                        elif args[0].startswith(":NickServ!") and "identify" in args:
-                            self.send("PRIVMSG NickServ :IDENTIFY {}".format(self.conf["nickserv_password"]))
-                            time.sleep(3)
-
-                        elif args[0].startswith(":NickServ!") and "identified" in args:
-                            # [':NickServ!NickServ@services.', 'NOTICE', 'falco', ':You', 'are', 'now', 'identified', 'for', '\x02falco\x02.']
-                            for chan in self.autojoin:
-                                self.send("JOIN {}".format(chan))
-
-                        elif args[0] == "ERROR":
-                            # ['ERROR', ':Closing', 'Link:', 'falco[meetmehereonirclo.lol]', '(Excess', 'Flood)']
-                            if args[4] == "(Excess" and args[5] == "Flood)":
-                                self.reconnect()
-
-                        elif args[0] == "PING":
-                            # ['PING', ':blah']
-                            #self.send("LUSERS")
-                            self.send("PONG {}".format(args[1]))
-
-                        elif args[0] == "AUTHENTICATE":
-                            func = globals()["handle_AUTHENTICATE"]
-                            func(self, user, args)
-
-                        if args[1] == "PONG":
-                            self.pingtime = int(time.time() - self.lastping)
-                            self.lastping = time.time()
-
-                            if self.pingtime - self.pingfreq > self.pingwarn:
-                                log.warn("(%s) Lag: %s seconds", self.netname,
-                                         round(self.pingtime - self.pingfreq, 3))
-
-                            if self.pingtime - self.pingfreq > self.pingtimeout:
-                                self.disconnect("Ping timeout: {} seconds".format(
-                                        round(self.pingtime - self.pingfreq)), terminate=False)
-                                self.connect()
-
-                        try:
-                            real_args = []
-                            for arg in args:
-                                real_args.append(arg)
-                                if arg.startswith(':') and args.index(arg) != 0:
-                                    index = args.index(arg)
-                                    arg = args[index:]
-                                    arg = ' '.join(arg)[1:]
-                                    real_args = args[:index]
-                                    real_args.append(arg)
-                                    break
-
-                            real_args[0] = real_args[0].split(':', 1)[1]
-                            args = real_args
-
-                            user = args[0]
-                            command = args[1]
-                            args = args[2:]
-
-                            try:
-                                func = globals()['handle_'+command]
-                            except KeyError as e:
-                                pass
-                            else:
-                                func(self, user, args)
-
-                        except IndexError:
-                            continue
-
-                except KeyboardInterrupt:
-                    self.shelve.close()
-                    self.disconnect("CTRL-C at console.")
-
-            else:
-                self.shelve.close()
-                self.socket.shutdown(2)
-                self.socket.close()
-                sys.exit(1)
 
     def disconnect(self, quit=None, terminate=True):
         self.send("QUIT :{}".format("Goodbye" if not quit else quit))
@@ -322,6 +319,9 @@ if __name__ == "__main__":
         log.critical("No config file supplied.")
         sys.exit(1)
 
-    irc = IRC(conf)
     reload_handlers(init=True)
-    reload_plugins(irc, init=True)
+
+    for server in conf["servers"]:
+        utils.connections[server["netname"]] = IRC(server)
+        reload_plugins(utils.connections[server["netname"]], init=True)
+        utils.connections[server["netname"]].start()
