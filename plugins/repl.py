@@ -52,11 +52,12 @@ def multirepl(irc, source, msgtarget, args):
 add_regex(multirepl, "(.*)")
 
 def multireplprefix(irc, source, msgtarget, args):
-    if irc.multirepl == True:
-        irc.multirepl = False
-        irc.repls.run(msgtarget, irc.repl)
-        irc.repl = ""
-    else:
-        irc.multirepl = True
+    if isAdmin(irc, source):
+        if irc.multirepl == True:
+            irc.multirepl = False
+            irc.repls.run(msgtarget, irc.repl)
+            irc.repl = ""
+        else:
+            irc.multirepl = True
 
 add_regex(multireplprefix, '"""')
