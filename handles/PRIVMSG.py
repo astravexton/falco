@@ -8,13 +8,6 @@ def handle_NOTICE(irc, source, args):
     address = source.split("@")[1]
     chan, message = args
 
-    #if nick == "NickServ" and "This nickname is registered." in message:
-    #    if "nickserv_password" in irc.conf:
-    #        irc.send("PRIVMSG NickServ :IDENTIFY {}".format(irc.conf["nickserv_password"]))
-    #        time.sleep(3) # sleep to let it get a cloak
-    #        # TODO: does this actually work?
-    #        # TODO: SASL plugin..
-
 def handle_PRIVMSG(irc, source, args):
     nick = source.split("!")[0]
     ident = source.split("!")[1].split("@")[0]
@@ -62,11 +55,6 @@ def handle_PRIVMSG(irc, source, args):
                 c = threading.Thread(target=func, args=(irc, source, chan, m.groups()))
                 c.daemon = True
                 c.start()
-                #return func(irc, source, chan, m.groups())
-
-        #text = re.sub(r"\$[a-z]+", subs, message, flags=re.IGNORECASE)
-        #if text != message and message[0] not in ".!@:":
-        #    irc.msg(chan, "│ "+text, reply="PRIVMSG")
 
         if args[0] == irc.nick:
             # in a pm, should reply to nick not self
@@ -99,7 +87,5 @@ def handle_PRIVMSG(irc, source, args):
         if chan not in ["##chat-bridge"]:
             try:
                 irc.nicks[nick]["lastaction"] = {"action": "PRIVMSG", "args": message, "time": time.time(), "chan": chan}
-                #irc.nicks[nick]["lastspoke"] = time.time()
-                #irc.nicks[nick]["lastmsg"] = message
             except:
                 pass
