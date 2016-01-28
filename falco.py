@@ -28,7 +28,7 @@ def reload_handlers(init=False):
                 continue
             log.info("(Re)Loaded %s", filename)
 
-def reload_plugins(irc, init=False):
+def reload_plugins(init=False):
     plugins_folder = [os.path.join(os.getcwd(), 'plugins')]
     plugins = set(glob.glob(os.path.join("plugins", "*.py")))
     for plugin in plugins:
@@ -51,8 +51,9 @@ def reload_plugins(irc, init=False):
                 pass
             else:
                 if hasattr(pl, 'main'):
-                    log.debug('Calling main() function of plugin %r', pl)
-                    pl.main(irc)
+                    for server in utils.connections.values():
+                        pl.main(server)
+                        log.debug('%r Calling main() function of plugin %r', server.netname, pl)
             log.info("(Re)Loaded %s", _plugin)
 
 def reload_config(irc):
@@ -63,6 +64,10 @@ def reload_config(irc):
         irc.conf = conf
         irc.reloadConfig()
         log.debug("(%s) Reloaded config", irc.netname)
+
+def connectall():
+    for server in utils.connections.values():
+        server.start()
 
 log.info("Starting falco")
 
@@ -135,6 +140,7 @@ class IRC(threading.Thread):
         self.ops                                = self.conf.get("ops", [])
 
     def run(self):
+        
 
         self.connect()
 
@@ -144,7 +150,7 @@ class IRC(threading.Thread):
                 self.ibuffer += data
                 while "\r\n" in self.ibuffer:
                     reload_handlers()
-                    reload_plugins(self)
+                    reload_plugins()
                     reload_config(self)
 
                     line, self.ibuffer = self.ibuffer.split("\r\n", 1)
@@ -323,5 +329,5 @@ if __name__ == "__main__":
 
     for server in conf["servers"]:
         utils.connections[server["netname"]] = IRC(server)
-        reload_plugins(utils.connections[server["netname"]], init=True)
-        utils.connections[server["netname"]].start()
+    reload_plugins(init=True)
+    connectall()
