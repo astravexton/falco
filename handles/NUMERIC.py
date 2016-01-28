@@ -4,8 +4,8 @@ from utils import parse_modes, getNewNick, chanmodes
 def handle_001(irc, source, args):
     # ['nathan', 'Welcome to the Internet Relay Chat Network nathan!weechat@proxy']
     # ['falco', 'Welcome to the subluminal IRC Network falco!falco@213.205.253.114']
-    irc.nick = args[1].split()[-1].split("!")[0]
-    irc.ident = args[1].split()[-1].split("!")[1].split("@")[0]
+    #irc.nick = args[1].split()[-1].split("!")[0]
+    #irc.ident = args[1].split()[-1].split("!")[1].split("@")[0]
     irc.host = args[1].split()[-1].split("@")[1]
 
 def handle_005(irc, source, args):
