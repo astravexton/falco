@@ -56,14 +56,15 @@ def reload_plugins(init=False):
                         log.debug('%r Calling main() function of plugin %r', server.netname, pl)
             log.info("(Re)Loaded %s", _plugin)
 
-def reload_config(irc):
-    if irc.conf_mtime != os.stat(config_file).st_mtime:
-        with open(config_file, "r") as f:
-            conf = json.load(f)
-        irc.conf_mtime = os.stat(config_file).st_mtime
-        irc.conf = conf
-        irc.reloadConfig()
-        log.debug("(%s) Reloaded config", irc.netname)
+def reload_config():
+    for irc in utils.connections.values():
+        if irc.conf_mtime != os.stat(config_file).st_mtime:
+            with open(config_file, "r") as f:
+                conf = json.load(f)
+            irc.conf_mtime = os.stat(config_file).st_mtime
+            irc.conf = conf[irc.netname]
+            irc.reloadConfig()
+            log.debug("(%s) Reloaded config", irc.netname)
 
 def connectall():
     for server in utils.connections.values():
@@ -151,7 +152,7 @@ class IRC(threading.Thread):
                 while "\r\n" in self.ibuffer:
                     reload_handlers()
                     reload_plugins()
-                    reload_config(self)
+                    reload_config()
 
                     line, self.ibuffer = self.ibuffer.split("\r\n", 1)
                     line = line.strip()
@@ -327,7 +328,7 @@ if __name__ == "__main__":
 
     reload_handlers(init=True)
 
-    for server in conf["servers"]:
+    for server in conf.values():
         utils.connections[server["netname"]] = IRC(server)
     reload_plugins(init=True)
     connectall()
