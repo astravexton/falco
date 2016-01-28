@@ -21,7 +21,7 @@ IRC bot that does stuff, now supports multiple connections!
         "nickserv_password": "",
         "sasl": false,
         "sasl_username": "",
-        "sasl_password": ""
+        "sasl_password": "",
         "admins": ["*!*@some.host", "moo!hue@*"],
         "autojoin": ["##test"],
         "kickmethod": "KICK",
@@ -29,6 +29,9 @@ IRC bot that does stuff, now supports multiple connections!
         "filter": {},
         "autokick": {},
         "blacklisted_commands": {"#test": ["yt"]}
+    },
+    "server2": {
+        ...
     }
 }
 
