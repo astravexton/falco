@@ -1,5 +1,4 @@
-from utils import isAdmin, add_cmd, add_regex
-import code, sys
+import code, sys, utils
 
 def main(irc):
     irc.repl = ""
@@ -10,7 +9,7 @@ class Repl(code.InteractiveConsole):
     def __init__(self, irc):
         code.InteractiveConsole.__init__(self, {
                 "falco": irc,
-                "globals": globals})
+                "utils": utils})
         self.irc = irc
         self.channel = None
         self.buf = ""
@@ -39,20 +38,20 @@ class Repl(code.InteractiveConsole):
         self.showtraceback()
 
 def repl(irc, source, msgtarget, args):
-    if isAdmin(irc, source):
+    if utils.isAdmin(irc, source):
         irc.repls.run(msgtarget, args)
 
-add_cmd(repl, ">>")
+utils.add_cmd(repl, ">>")
 
 def multirepl(irc, source, msgtarget, args):
     args = args[0]
-    if isAdmin(irc, source) and irc.multirepl == True and args != '"""':
+    if utils.isAdmin(irc, source) and irc.multirepl == True and args != '"""':
         irc.repl+=args+"\n"
-        
+
 add_regex(multirepl, "(.*)")
 
 def multireplprefix(irc, source, msgtarget, args):
-    if isAdmin(irc, source):
+    if utils.isAdmin(irc, source):
         if irc.multirepl == True:
             irc.multirepl = False
             irc.repls.run(msgtarget, irc.repl)
@@ -60,4 +59,4 @@ def multireplprefix(irc, source, msgtarget, args):
         else:
             irc.multirepl = True
 
-add_regex(multireplprefix, '"""')
+utils.add_regex(multireplprefix, '"""')
