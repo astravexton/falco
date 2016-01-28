@@ -1,35 +1,37 @@
 # falco
 
-IRC bot that does stuff
+IRC bot that does stuff, now supports multiple connections!
 
 # config file
 
 ```json
 {
-    "netname": "moo",
-    "active": true,
-    "server": "irc.some.net",
-    "port": 6697,
-    "ssl": true,
-    "nick": "falco",
-    "ident": "falco",
-    "gecos": "falco",
-    "prefix": "!",
-    "reply": "PRIVMSG",
-    "modes": "",
-    "nickserv_password": "",
-    "sasl": true,
-    "sasl_username": "falco",
-    "sasl_password": "moo",
-    "admins": ["*!falco@*"],
-    "ops": [],
-    "autojoin": ["#chat"],
-    "ignored": [],
-    "filter": {},
-    "autokick": {},
-    "kickmethod": "KICK",
-    "blacklisted_commands": {}
+    "server1": {
+        "netname": "server1",
+        "active": true,
+        "server": "irc.moo.net",
+        "port": 6697,
+        "ssl": true,
+        "nick": "falco",
+        "ident": "falco",
+        "gecos": "falco",
+        "prefix": "[.>]",
+        "reply": "PRIVMSG",
+        "modes": "+B",
+        "nickserv_password": "",
+        "sasl": false,
+        "sasl_username": "",
+        "sasl_password": ""
+        "admins": ["*!*@some.host", "moo!hue@*"],
+        "autojoin": ["##test"],
+        "kickmethod": "KICK",
+        "ignored": [],
+        "filter": {},
+        "autokick": {},
+        "blacklisted_commands": {"#test": ["yt"]}
+    }
 }
+
 ```
 
 To run the bot, type
