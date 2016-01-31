@@ -250,3 +250,12 @@ def timeuntil(d, now=None):
     if not now:
         now = datetime.datetime.now()
     return timesince(now, d)
+
+def check_mask(irc, ip):
+    l = list(zip(re.split("[./:]", irc.host), re.split("[./:]", ip)))
+    for idx, tup in enumerate(l[::]):
+        l[idx] = set(tup)
+
+    if len(set.union(*l)) == len(re.split("[./:]", irc.host)): return True
+    else: return False
+
