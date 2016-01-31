@@ -1,4 +1,4 @@
-import random
+import random, time
 from utils import parse_modes, getNewNick, chanmodes, check_mask
 
 def handle_001(irc, source, args):
@@ -127,8 +127,9 @@ def handle_366(irc, source, args):
 def handle_KICK(irc, source, args):
     # ['##test', '_', 'my finger slipped']
     if args[1] == irc.nick and irc.netname == "subluminal" and args[0] == "#programming":
-        irc.send("JOIN {}".format(args[0]))
         irc.send("PRIVMSG ChanServ :KICK {} {}".format(args[0], source.split("!")[0]))
+        time.sleep(1)
+        irc.send("JOIN {}".format(args[0]))
 
 def handle_MODE(irc, source, args):
     # falco
