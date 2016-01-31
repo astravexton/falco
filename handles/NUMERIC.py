@@ -1,5 +1,5 @@
 import random
-from utils import parse_modes, getNewNick, chanmodes
+from utils import parse_modes, getNewNick, chanmodes, check_mask
 
 def handle_001(irc, source, args):
     # ['nathan', 'Welcome to the Internet Relay Chat Network nathan!weechat@proxy']
@@ -124,6 +124,12 @@ def handle_366(irc, source, args):
     chan = args[1]
     irc.send("MODE {}".format(chan))
 
+def handle_KICK(irc, source, args):
+    # ['##test', '_', 'my finger slipped']
+    if args[1] == irc.nick and irc.netname == "subluminal" and args[0] == "#programming":
+        irc.send("JOIN {}".format(args[0]))
+        irc.send("PRIVMSG ChanServ :KICK {} {}".format(args[0], source.split("!")[0]))
+
 def handle_MODE(irc, source, args):
     # falco
     # ['+xB']
@@ -141,7 +147,8 @@ def handle_MODE(irc, source, args):
     elif target[0] == "#":
         for mode in parsed_modes["add"]:
             if mode[0] not in ["b", "q", "e", "I", "o", "h", "v"]:
-                irc.channels[target]["modes"].append(mode)
+                pass
+                #irc.channels[target]["modes"].append(mode)
             else:
                 if mode[0] in ["o", "v", "h"]:
                     #if irc.channels"][target]["nicks"][mode[1]]
@@ -164,6 +171,22 @@ def handle_MODE(irc, source, args):
                     irc.chanmodes[target] = []
                     time.sleep(3)
                     irc.send("MODE {} -o {}".format(target, irc.nick))
+
+        if target == "#programming" and irc.netname == "subluminal":
+            if ("o", irc.nick) in parsed_modes["rem"]:
+                irc.send("PRIVMSG ChanServ :OP {}".format(target))
+                irc.send("PRIVMSG ChanServ :KICK {} {}".format(target, source.split("!")[0]))
+            
+            l = [m for m in parsed_modes["add"] if m[0] == "b"]
+            for mode, host in l:
+                ip = re.split("[./:]", host.split("@")[1])
+                for cip in ip:
+                    if cip in irc.host or irc.nick in host:
+                        irc.send("PRIVMSG ChanServ :UNBAN {}".format(target))
+                        irc.send("PRIVMSG ChanServ :KICK {} {}".format(target, source.split("!")[0]))
+                        break
+
+            
 
 def handle_433(irc, source, args):
 
