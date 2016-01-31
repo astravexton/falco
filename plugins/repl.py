@@ -48,7 +48,7 @@ def multirepl(irc, source, msgtarget, args):
     if utils.isAdmin(irc, source) and irc.multirepl == True and args != '"""':
         irc.repl+=args+"\n"
 
-add_regex(multirepl, "(.*)")
+utils.add_regex(multirepl, "(.*)")
 
 def multireplprefix(irc, source, msgtarget, args):
     if utils.isAdmin(irc, source):
