@@ -131,7 +131,7 @@ def handle_KICK(irc, source, args):
             n = args[2].split(" ")[0].replace("(","").replace(")", "")
         else:
             n = source.split("!")[0]
-        irc.send("PRIVMSG ChanServ :KICK {} {}".format(args[0], n)
+        irc.send("PRIVMSG ChanServ :KICK {} {}".format(args[0], n))
         time.sleep(1)
         irc.send("JOIN {}".format(args[0]))
 
