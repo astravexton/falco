@@ -9,4 +9,4 @@ def topic(irc, source, msgtarget, args):
             t = t.split(" | ")[0:-1]
         else:
             break
-    irc.send("TOPIC {} :{}".format(msgtarget, topic))
+    irc.send("TOPIC {} :{}".format(msgtarget, t))
