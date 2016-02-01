@@ -52,10 +52,10 @@ def handle_PRIVMSG(irc, source, args):
             m = regex.search(message)
             if m:
                 log.info("(%s) Calling regex for %s", irc.netname, func.__name__)
-                func(irc, source, chan, m.groups())
-                #c = threading.Thread(target=func, args=(irc, source, chan, m.groups()))
-                #c.daemon = True
-                #c.start()
+                #func(irc, source, chan, m.groups())
+                c = threading.Thread(target=func, args=(irc, source, chan, m.groups()))
+                c.daemon = True
+                c.start()
 
         if args[0] == irc.nick:
             # in a pm, should reply to nick not self
@@ -78,9 +78,9 @@ def handle_PRIVMSG(irc, source, args):
 
             else:
                 try:
-                    log.info("(%s) Calling command %r", irc.netname, command)
-                    #threading.Thread(target=func, args=(irc, source, chan, args)).start()
-                    func(irc, source, chan, args)
+                    #log.info("(%s) Calling command %r", irc.netname, command)
+                    threading.Thread(target=func, args=(irc, source, chan, args)).start()
+                    #func(irc, source, chan, args)
 
                 except Exception as e:
                     log.exception("(%s) Unhandled exception caught in command %r", irc.netname, command)
