@@ -10,5 +10,5 @@ def topic(irc, source, msgtarget, args):
                 t = t.split(" | ")[0:-1]
             else:
                 break
-        irc.chanmodes[msgtarget].append("TOPIC {} :{}".format(msgtarget, args))
+        irc.chanmodes[msgtarget].append("TOPIC {} :{}".format(msgtarget, t))
         irc.send("PRIVMSG ChanServ :OP {}".format(msgtarget))
