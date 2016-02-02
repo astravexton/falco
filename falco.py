@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 import glob, os, socket, time, re, string, sys, json
 import threading
 import queue as Queue
