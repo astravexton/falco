@@ -1,18 +1,11 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-import glob, os, socket, time, re, string, sys, json
+import glob, os, socket, time, re, sys, json
 import threading
-import queue as Queue
 from ssl import wrap_socket
 from log import log
 import utils
 import imp
-from multiprocessing import Process
-import websocket
-import random, shelve, base64
-
-global reload_plugins
-global config_file, conf
 
 def reload_handlers(init=False):
     handlers = set(glob.glob(os.path.join("handles", "*.py")))
@@ -79,72 +72,67 @@ class IRC(threading.Thread):
 
     def __init__(self, conf):
         threading.Thread.__init__(self)
-        self.setDaemon                          = True
-        self.conf                               = conf
-        self.conf_mtime                         = os.stat(config_file).st_mtime
-        self.netname                            = self.conf["netname"]
-        self.rx                                 = 0
-        self.tx                                 = 0
-        self.txmsgs                             = 0
-        self.rxmsgs                             = 0
-        self.started                            = 0
-        self.server                             = self.conf["server"]
-        self.port                               = self.conf["port"]
-        self.ssl                                = self.conf["ssl"]
-        self.pingfreq                           = 30
-        self.pingtimeout                        = 60
-        self.pingwarn                           = 5
-        self.password                           = "6675636b796f75"
-        self.prefixmodes                        = {'q': '~', 'a': '&', 'v': '+', 'o': '@', 'h': '%'}
-        self.connected                          = False
-        self.chanmodes                          = {}
-        self.modes                              = []
-        self.channels                           = {}
-        self.nicks                              = {}
-        self.hasink                             = True
-        self.color                              = 14
-        self.buffermaxlen                       = 16003
-        self.admins                             = self.conf["admins"]
-        self.nicks                              = {}
-        self.channels                           = {}
-        #self.shelve                             = shelve.open("falco-{}.db".format(self.netname), writeback=True)
-        #self.admins = self.conf["admins"]
-        #try: self.nicks = self.shelve["nicks"]
+        self.daemon         = True
+        self.data_dir       = "data/"
+        self.conf           = conf
+        self.conf_mtime     = os.stat(config_file).st_mtime
+        self.netname        = self.conf["netname"]
+        self.rx             = 0
+        self.tx             = 0
+        self.txmsgs         = 0
+        self.rxmsgs         = 0
+        self.started        = 0
+        self.server         = self.conf["server"]
+        self.port           = self.conf["port"]
+        self.ssl            = self.conf["ssl"]
+        self.nick           = self.conf["nick"]
+        self.pingfreq       = 30
+        self.pingtimeout    = self.pingfreq*2
+        self.pingwarn       = 5
+        self.password       = "6675636b796f75"
+        self.prefixmodes    = {'q': '~', 'a': '&', 'v': '+', 'o': '@', 'h': '%'}
+        self.connected      = False
+        self.chanmodes      = {}
+        self.modes          = []
+        self.channels       = {}
+        self.nicks          = {}
+        self.hasink         = True
+        self.color          = 14
+        self.buffermaxlen   = 16003
+        self.identified     = False
+        #self.shelve         = shelve.open("falco-{}.db".format(self.netname), writeback=True)
+        #self.admins         = self.conf["admins"]
+        #try: self.nicks     = self.shelve["nicks"]
         #except: self.nicks = {}
         #try: self.channels = self.shelve["channels"]
         #except: self.channels = {}
 
-        self.title_snarfer_allowed              = []
-        self.title_snarfer_ignored_urls         = []
+        self.title_snarfer_allowed      = []
+        self.title_snarfer_ignored_urls = []
 
-        self.repls                              = None
+        self.pingTimer = None
+        self.pingtime = time.time()
+        self.lastping = self.pingtime
 
-        self.pingTimer                          = None
-        self.pingtime                           = time.time()
-        self.lastping                           = self.pingtime
         self.reloadConfig()
-        #if self.conf["active"]:
-        #    self.run()
 
     def reloadConfig(self):
 
-        self.reply                              = self.conf["reply"]
-        self.nick                               = self.conf["nick"]
-        self.user                               = self.conf["ident"]
-        self.gecos                              = self.conf["gecos"]
-        self.setmodes                           = self.conf["modes"]
-        self.prefix                             = self.conf["prefix"]
-        self.admins                             = self.conf["admins"]
-        self.autojoin                           = self.conf["autojoin"]
-        self.ignored                            = self.conf["ignored"]
-        self.filter                             = self.conf["filter"]
-        self.autokick                           = self.conf["autokick"]
-        self.ops                                = self.conf.get("ops", [])
+        self.reply          = self.conf["reply"]
+        self.user           = self.conf["ident"]
+        self.gecos          = self.conf["gecos"]
+        self.setmodes       = self.conf["modes"]
+        self.prefix         = self.conf["prefix"]
+        self.admins         = self.conf["admins"]
+        self.autojoin       = self.conf["autojoin"]
+        self.ignored        = self.conf["ignored"]
+        self.autokick       = self.conf["autokick"]
+        self.ops            = self.conf.get("ops", [])
 
     def run(self):
-        
-
+ 
         self.connect()
+        # self.schedulePing() # this seems to not work as expected, will fix at some point
 
         while self.connected:
             try:
@@ -157,7 +145,9 @@ class IRC(threading.Thread):
 
                     line, self.ibuffer = self.ibuffer.split("\r\n", 1)
                     line = line.strip()
+
                     log.debug("(%s) -> %s", self.netname, line)
+
                     self.rx += len(line)
                     self.rxmsgs += 1
 
@@ -166,15 +156,6 @@ class IRC(threading.Thread):
                     if not args:
                         return
 
-                    elif args[0].startswith(":NickServ!") and "identify" in args:
-                        self.send("PRIVMSG NickServ :IDENTIFY {}".format(self.conf["nickserv_password"]))
-                        time.sleep(3)
-
-                    elif args[0].startswith(":NickServ!") and "identified" in args:
-                        # [':NickServ!NickServ@services.', 'NOTICE', 'falco', ':You', 'are', 'now', 'identified', 'for', '\x02falco\x02.']
-                        for chan in self.autojoin:
-                            self.send("JOIN {}".format(chan))
-
                     elif args[0] == "ERROR":
                         # ['ERROR', ':Closing', 'Link:', 'falco[meetmehereonirclo.lol]', '(Excess', 'Flood)']
                         if args[4] == "(Excess" and args[5] == "Flood)":
@@ -182,7 +163,6 @@ class IRC(threading.Thread):
 
                     elif args[0] == "PING":
                         # ['PING', ':blah']
-                        #self.send("LUSERS")
                         self.send("PONG {}".format(args[1]))
 
                     elif args[0] == "AUTHENTICATE":
@@ -196,11 +176,6 @@ class IRC(threading.Thread):
                         if self.pingtime - self.pingfreq > self.pingwarn:
                             log.warn("(%s) Lag: %s seconds", self.netname,
                                         round(self.pingtime - self.pingfreq, 3))
-
-                        if self.pingtime - self.pingfreq > self.pingtimeout:
-                            self.disconnect("Ping timeout: {} seconds".format(
-                                    round(self.pingtime - self.pingfreq)), terminate=False)
-                            self.connect()
 
                     try:
                         real_args = []
@@ -237,9 +212,6 @@ class IRC(threading.Thread):
 
     def msg(self, target, message, reply=None):
         reply = self.reply if not reply else reply
-        message = message.replace("http", "ht\x0ftp")
-        for filter in self.filter:
-            message = re.sub(filter, "", message, flags=re.IGNORECASE)
         if self.hasink:
             self.send("{} {} :\x03{}│\x0f {}".format(reply, target, self.color, message))
         else:
@@ -270,6 +242,9 @@ class IRC(threading.Thread):
         #self.shelve["channels"] = self.channels
         #self.shelve.sync() # BUG: this ends up creating very large files for some reason
         #                   # 5.9G Jan 11 18:05 falco-freenode.db
+        if time.time() - self.lastping > self.pingtimeout:
+            self.disconnect("Ping timeout: {} seconds".format(round(self.pingtime - self.pingfreq)))
+            self.run()
         self.send("PING {}".format(time.time()))
         self.pingTimer = threading.Timer(self.pingfreq, self.schedulePing)
         self.pingTimer.daemon = True
@@ -288,7 +263,6 @@ class IRC(threading.Thread):
         if self.conf.get("sasl"):
             self.send("CAP REQ :multi-prefix sasl")
         self.send("NICK {}".format(self.nick))
-        self.schedulePing()
         self.ibuffer = ""
         log.debug("(%s) Running main loop", self.netname)
         self.connected = True
@@ -305,7 +279,7 @@ class IRC(threading.Thread):
         self.socket.close()
         self.connected = False
         self.pingTimer.cancel()
-        self.connect()
+        self.run()
 
 if __name__ == "__main__":
 

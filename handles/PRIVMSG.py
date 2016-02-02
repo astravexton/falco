@@ -3,10 +3,19 @@ from utils import connections, isAdmin, isOp, bot_regexes, timesince
 from cgi import escape
 
 def handle_NOTICE(irc, source, args):
+    # falco falco xe421.at.zyr.io astra test
     nick = source.split("!")[0]
     ident = source.split("!")[1].split("@")[0]
     address = source.split("@")[1]
     chan, message = args
+
+    if nick == "NickServ" and irc.identified == False:
+        if "This nickname is registered." in message:
+            irc.send("PRIVMSG NickServ :identify {}".format(irc.conf["nickserv_password"]))
+        elif "You are now identified" in message:
+            irc.identified = True
+            for chan in irc.autojoin:
+                irc.send("JOIN {}".format(chan))
 
 def handle_PRIVMSG(irc, source, args):
     nick = source.split("!")[0]
@@ -51,8 +60,7 @@ def handle_PRIVMSG(irc, source, args):
             regex, func = cmd
             m = regex.search(message)
             if m:
-                log.info("(%s) Calling regex for %s", irc.netname, func.__name__)
-                #func(irc, source, chan, m.groups())
+                #log.info("(%s) Calling regex for %s", irc.netname, func.__name__)
                 c = threading.Thread(target=func, args=(irc, source, chan, m.groups()))
                 c.daemon = True
                 c.start()
@@ -80,7 +88,6 @@ def handle_PRIVMSG(irc, source, args):
                 try:
                     #log.info("(%s) Calling command %r", irc.netname, command)
                     threading.Thread(target=func, args=(irc, source, chan, args)).start()
-                    #func(irc, source, chan, args)
 
                 except Exception as e:
                     log.exception("(%s) Unhandled exception caught in command %r", irc.netname, command)

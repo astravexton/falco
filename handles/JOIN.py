@@ -17,7 +17,8 @@ def handle_JOIN(irc, source, args):
         irc.channels[chan] = {
             "modes": (),
             "nicks": dict(),
-            "buffer": []}
+            "buffer": []
+        }
 
     if nick not in irc.nicks:
         irc.nicks[nick] = {
@@ -25,16 +26,16 @@ def handle_JOIN(irc, source, args):
             "ident": ident,
             "host": host,
             "gecos": None,
-            "channels": set(),
+            "channels": list(),
             "server": None
         }
     elif nick in irc.nicks:
         irc.nicks[nick]["ident"] = ident
         irc.nicks[nick]["host"] = host
     try:
-        irc.nicks[nick]["channels"].add(chan)
+        irc.nicks[nick]["channels"].append(chan)
     except:
-        print(irc.nicks[nick])
+        print("{} not in irc.nicks".format(nick))
 
     if chan not in irc.autokick:
         irc.autokick[chan] = list()

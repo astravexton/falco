@@ -91,11 +91,11 @@ def handle_352(irc, source, args):
             "ident": ident,
             "host": host,
             "gecos": gecos,
-            "channels": set(),
-            "server": server,
-            "lastspoke": 0
+            "channels": list(),
+            "server": server
         }
-    irc.nicks[nick]["channels"].add(chan)
+    if chan not in irc.nicks[nick]["channels"]:
+        irc.nicks[nick]["channels"].append(chan)
 
 def handle_353(irc, source, args):
     # ['falco', '=', '#test', 'falco @nathan @ChanServ']
