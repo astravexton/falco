@@ -72,7 +72,7 @@ class IRC(threading.Thread):
 
     def __init__(self, conf):
         threading.Thread.__init__(self)
-        self.daemon         = True
+        #self.daemon         = True
         self.data_dir       = "data/"
         self.conf           = conf
         self.conf_mtime     = os.stat(config_file).st_mtime
