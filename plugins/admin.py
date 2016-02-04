@@ -185,36 +185,27 @@ add_cmd(_exec, ">")
 
 def _shell(irc, source, msgtarget, args):
     if isAdmin(irc, source):
-        try:
-            proc = subprocess.Popen(args[1]+" | ./ircize --remove", shell=True, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
-            if args[0]:
-                outs, errs = proc.communicate()
-            else:
-                outs, errs = proc.communicate(timeout=5)
-            c = 0
-            for line in decode(outs).split("\n"):
+        command = "/bin/bash -c -i {}".format(shlex.quote(args[1]+" | ./ircize --remove"))
+        start, lines, dump = time.time(), 0, ""
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+        while True:
+            output = process.stdout.readline().decode()
+            if output.strip() == '' and process.poll() is not None:
+                break
+            if output:
+                dump+= output
+                lines += 1
+            if time.time() - start > 5:
+                print("Timeout reached")
+                break
+        rc = process.poll()
+        if lines > 10:
+            key = requests.post("http://bin.zyr.io/documents", data=dump).json()["key"]
+            irc.msg(msgtarget, "Output too long, see http://bin.zyr.io/"+key)
+        elif lines < 10:
+            for line in dump.split("\n"):
                 if line.strip():
-                    c+=1
-                    if c < 500 and not args[0]:
-                        irc.msg(msgtarget, line.strip().replace(",I5", "").replace("I5", ""))
-                    else:
-                        continue
-            #if c > 5:
-            #    f = tempfile.NamedTemporaryFile(delete=False)
-            #    for line in decode(outs).split("\n"):
-            #        l = "{}\n".format(line)
-            #        f.write(l.encode())
-            #    f.close()
-            #    irc.msg(msgtarget, "Output too long, outputted to {}".format(f.name))
-            if errs:
-                irc.msg(msgtarget, errs.decode().split(": ",1)[1])
-            if proc.returncode > 0:
-                #if decode(errs):
-                #    irc.msg(msgtarget, decode(errs))
-                irc.msg(msgtarget, "Return code {}".format(proc.returncode))
-        except subprocess.TimeoutExpired as e:
-            os.kill(proc.pid+1, 9)
-            irc.msg(msgtarget, e)
+                    irc.msg(msgtarget, line.strip())
 
 add_regex(_shell, "^\$(\$)? (.*)")
 
