@@ -203,13 +203,14 @@ def _shell(irc, source, msgtarget, args):
                 print("Timeout reached")
                 break
         rc = process.poll()
-        if lines > 10:
-            key = requests.post("http://bin.zyr.io/documents", data=dump).json()["key"]
-            irc.msg(msgtarget, "Output too long, see http://bin.zyr.io/"+key)
-        elif lines < 10:
-            for line in dump.split("\n"):
-                if line.strip():
-                    irc.msg(msgtarget, line.strip())
+        if not args[0]:
+            if lines > 10:
+                key = requests.post("http://bin.zyr.io/documents", data=dump).json()["key"]
+                irc.msg(msgtarget, "Output too long, see http://bin.zyr.io/"+key)
+            elif lines < 10:
+                for line in dump.split("\n"):
+                    if line.strip():
+                        irc.msg(msgtarget, line.strip())
 
 add_regex(_shell, "^\$(\$)? (.*)")
 
