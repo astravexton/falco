@@ -187,15 +187,19 @@ def _shell(irc, source, msgtarget, args):
     if isAdmin(irc, source):
         command = "/bin/bash -c -i {}".format(shlex.quote(args[1]+" | ./ircize --remove"))
         start, lines, dump = time.time(), 0, ""
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
+        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while True:
             output = process.stdout.readline().decode()
+            stderr = process.stderr.readline().decode()
+            if stderr:
+                irc.msg(msgtarget, stderr)
+                break
             if output.strip() == '' and process.poll() is not None:
                 break
-            if output:
+            elif output:
                 dump+= output
                 lines += 1
-            if time.time() - start > 5:
+            elif time.time() - start > 5:
                 print("Timeout reached")
                 break
         rc = process.poll()
