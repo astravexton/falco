@@ -186,31 +186,30 @@ add_cmd(_exec, ">")
 def _shell(irc, source, msgtarget, args):
     if isAdmin(irc, source):
         command = "/bin/bash -c -i {}".format(shlex.quote(args[1]+" | ./ircize --remove"))
-        start, lines, dump = time.time(), 0, ""
+        start, lines, dump = time.time(), 0, []
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while True:
-            output = process.stdout.readline().decode()
-            stderr = process.stderr.readline().decode()
+            output = process.stdout.read().decode()
+            stderr = process.stderr.read().decode()
+            for line in output.split("\n"):
+                if line:
+                    dump.append(line)
+                    lines+=1
             if stderr:
-                irc.msg(msgtarget, stderr)
+                dump.append(stderr.strip())
+            if process.poll() == 0:
                 break
-            if output.strip() == '' and process.poll() is not None:
-                break
-            elif output:
-                dump+= output
-                lines += 1
-            elif time.time() - start > 5:
+            if time.time() - start > 5:
                 print("Timeout reached")
                 break
         rc = process.poll()
-        if not args[0]:
-            if lines > 10:
-                key = requests.post("http://bin.zyr.io/documents", data=dump).json()["key"]
-                irc.msg(msgtarget, "Output too long, see http://bin.zyr.io/"+key)
-            elif lines < 10:
-                for line in dump.split("\n"):
-                    if line.strip():
-                        irc.msg(msgtarget, line.strip())
+        if lines > 10:
+            key = requests.post("http://bin.zyr.io/documents", data=output.encode()).json()["key"]
+            irc.msg(msgtarget, "Output too long, see http://bin.zyr.io/"+key)
+        elif lines < 10 and not args[0]:
+            for line in dump:
+                if line:
+                    irc.msg(msgtarget, line)
 
 add_regex(_shell, "^\$(\$)? (.*)")
 
