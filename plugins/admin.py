@@ -40,11 +40,11 @@ def ignore(irc, source, msgtarget, args):
     """ignore <nick/host/#channel/wildcard> -- toggles ignore on either nick, host, channel or wildcard"""
     if isOp(irc, source):
         if args:
-            if args not in irc.ignored:
-                irc.ignored.append(args)
+            if args.lower() not in irc.ignored:
+                irc.ignored.append(args.lower())
                 irc.msg(msgtarget, "Ignored "+args)
             else:
-                irc.ignored.remove(args)
+                irc.ignored.remove(args.lower())
                 irc.msg(msgtarget, "Unignored "+args)
         else:
             irc.msg(msgtarget, "ignore <nick/host/#channel>")
