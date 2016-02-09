@@ -126,14 +126,7 @@ def handle_366(irc, source, args):
 
 def handle_KICK(irc, source, args):
     # ['##test', '_', 'my finger slipped']
-    if args[1] == irc.nick and irc.netname == "subluminal" and args[0] == "#programming":
-        if source.split("!")[0] == "ChanServ":
-            n = args[2].split(" ")[0].replace("(","").replace(")", "")
-        else:
-            n = source.split("!")[0]
-        irc.send("PRIVMSG ChanServ :KICK {} {}".format(args[0], n))
-        time.sleep(1)
-        irc.send("JOIN {}".format(args[0]))
+    pass
 
 def handle_MODE(irc, source, args):
     # falco
