@@ -235,8 +235,10 @@ class IRC(threading.Thread):
             log.debug("(%s) Dropping message %r; network isn't connected!", self.netname, stripped_data)
 
     def schedulePing(self):
-        json.dump(self.nicks, open(self.data_dir+self.netname+"-nicks.json", "w"), indent=4)
-        json.dump(self.channels, open(self.data_dir+self.netname+"-channels.json", "w"), indent=4)
+        with open(self.data_dir+self.netname+"-nicks.json", "w") as f:
+            json.dump(self.nicks, f, indent=4)
+        with open(self.data_dir+self.netname+"-channels.json", "w") as f:
+            json.dump(self.channels, f, indent=4)
         #if time.time() - self.lastping > self.pingtimeout:
         #    self.disconnect("Ping timeout: {} seconds".format(round(self.pingtime - self.pingfreq)))
         #    self.run()
