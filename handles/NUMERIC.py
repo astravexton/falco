@@ -4,8 +4,8 @@ from utils import parse_modes, getNewNick, chanmodes, check_mask
 def handle_001(irc, source, args):
     # ['nathan', 'Welcome to the Internet Relay Chat Network nathan!weechat@proxy']
     # ['falco', 'Welcome to the subluminal IRC Network falco!falco@213.205.253.114']
-    #irc.nick = args[1].split()[-1].split("!")[0]
-    #irc.ident = args[1].split()[-1].split("!")[1].split("@")[0]
+    irc.nick = args[1].split()[-1].split("!")[0]
+    irc.user = args[1].split()[-1].split("!")[1].split("@")[0]
     irc.host = args[1].split()[-1].split("@")[1]
 
 def handle_005(irc, source, args):
@@ -176,22 +176,6 @@ def handle_MODE(irc, source, args):
                     irc.chanmodes[target] = []
                     time.sleep(3)
                     irc.send("MODE {} -o {}".format(target, irc.nick))
-
-        if target == "#programming" and irc.netname == "subluminal":
-            if ("o", irc.nick) in parsed_modes["rem"]:
-                irc.send("PRIVMSG ChanServ :OP {}".format(target))
-                irc.send("PRIVMSG ChanServ :KICK {} {}".format(target, source.split("!")[0]))
-            
-            l = [m for m in parsed_modes["add"] if m[0] == "b"]
-            for mode, host in l:
-                ip = re.split("[./:]", host.split("@")[1])
-                for cip in ip:
-                    if cip in irc.host or irc.nick in host:
-                        irc.send("PRIVMSG ChanServ :UNBAN {}".format(target))
-                        irc.send("PRIVMSG ChanServ :KICK {} {}".format(target, source.split("!")[0]))
-                        break
-
-            
 
 def handle_433(irc, source, args):
 
