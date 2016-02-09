@@ -250,7 +250,7 @@ def getinfo(irc, source, msgtarget, args):
     formats = ["bytes", "KiB", "MiB", "GiB", "TiB"]
     txn = int(irc.tx / (1024 ** tx))
     rxn = int(irc.rx / (1024 ** rx))
-    irc.msg(msgtarget, "{}; ; rx {} {}, tx {} {}; Online for {}; I have seen {} messages and sent {} messages".format(
+    irc.msg(msgtarget, "{}; rx {} {}, tx {} {}; Online for {}; I have seen {} messages and sent {} messages".format(
             ver, rxn, formats[rx], txn, formats[tx],
             timesince(irc.started), irc.rxmsgs, irc.txmsgs))
 
