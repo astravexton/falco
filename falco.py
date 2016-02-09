@@ -94,19 +94,16 @@ class IRC(threading.Thread):
         self.connected      = False
         self.chanmodes      = {}
         self.modes          = []
-        self.channels       = {}
-        self.nicks          = {}
         self.hasink         = True
         self.color          = 14
         self.buffermaxlen   = 16003
         self.identified     = False
-        #self.shelve         = shelve.open("falco-{}.db".format(self.netname), writeback=True)
-        #self.admins         = self.conf["admins"]
-        #try: self.nicks     = self.shelve["nicks"]
-        #except: self.nicks = {}
-        #try: self.channels = self.shelve["channels"]
-        #except: self.channels = {}
-
+        try:
+            self.nicks      = json.load(open("data/{}-nicks.json".format(self.netname)))
+            self.channels   = json.load(open("data/{}-channels.json".format(self.netname)))
+        except FileNotFoundError: 
+            self.channels       = {}
+            self.nicks          = {}
         self.title_snarfer_allowed      = []
         self.title_snarfer_ignored_urls = []
 
@@ -132,7 +129,7 @@ class IRC(threading.Thread):
     def run(self):
  
         self.connect()
-        # self.schedulePing() # this seems to not work as expected, will fix at some point
+        self.schedulePing() # this seems to not work as expected, will fix at some point
 
         while self.connected:
             try:
@@ -238,14 +235,12 @@ class IRC(threading.Thread):
             log.debug("(%s) Dropping message %r; network isn't connected!", self.netname, stripped_data)
 
     def schedulePing(self):
-        #self.shelve["nicks"] = self.nicks
-        #self.shelve["channels"] = self.channels
-        #self.shelve.sync() # BUG: this ends up creating very large files for some reason
-        #                   # 5.9G Jan 11 18:05 falco-freenode.db
-        if time.time() - self.lastping > self.pingtimeout:
-            self.disconnect("Ping timeout: {} seconds".format(round(self.pingtime - self.pingfreq)))
-            self.run()
-        self.send("PING {}".format(time.time()))
+        json.dump(self.nicks, open(self.data_dir+self.netname+"-nicks.json", "w"), indent=4)
+        json.dump(self.channels, open(self.data_dir+self.netname+"-channels.json", "w"), indent=4)
+        #if time.time() - self.lastping > self.pingtimeout:
+        #    self.disconnect("Ping timeout: {} seconds".format(round(self.pingtime - self.pingfreq)))
+        #    self.run()
+        #self.send("PING {}".format(time.time()))
         self.pingTimer = threading.Timer(self.pingfreq, self.schedulePing)
         self.pingTimer.daemon = True
         self.pingTimer.start()
