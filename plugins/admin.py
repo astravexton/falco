@@ -462,13 +462,12 @@ add_cmd(filter, "filter")
 @add_cmd
 def mode(irc, source, msgtarget, args):
     if isOp(irc, source):
-        if args:
-            try:
-                chan, cmd = args.split(" ",1)
-                irc.chanmodes[chan].append("MODE {} {}".format(chan, cmd))
-                irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
-            except ValueError:
-                irc.msg(msgtarget, "mode <channel> <modes>")
+        try:
+            chan, cmd = args.split(" ",1)
+            irc.chanmodes[chan].append("MODE {} {}".format(chan, cmd))
+            irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
+        except ValueError:
+            irc.msg(msgtarget, "mode <channel> <modes>")
 
 @add_cmd
 def history(irc, source, msgtarget, args):
