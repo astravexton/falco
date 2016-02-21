@@ -50,8 +50,6 @@ def handle_266(irc, source, args):
 def handle_311(irc, source, args):
     # ['falco', 'falco', 'falco', 'FCA67DC7.93D0F161.F235D4E8.IP', '*', "nathan's bot"]
     irc.host = args[3]
-    if "*!nathan@{}".format(args[3]) not in irc.admins:
-        irc.admins.append("*!nathan@{}".format(args[3]))
 
 def handle_314(irc, source, args):
     # ['zero', 'nathan', 'nathan', 'hide-A31D54D.zyr.io', '*', 'nathan']
