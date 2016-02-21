@@ -74,6 +74,7 @@ class IRC(threading.Thread):
         threading.Thread.__init__(self)
         #self.daemon         = True
         self.data_dir       = "data/"
+        os.makedirs(self.data_dir, exist_ok=True)
         self.conf           = conf
         self.conf_mtime     = os.stat(config_file).st_mtime
         self.netname        = self.conf["netname"]
