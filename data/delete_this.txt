@@ -1,1 +1,0 @@
-This has to be added because git doesn't store empty folders.
