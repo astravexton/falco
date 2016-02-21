@@ -426,6 +426,8 @@ def wiki(irc, source, msgtarget, args):
         irc.msg(msgtarget, "More at "+url)
     except wikipedia.exceptions.DisambiguationError as e:
         bot_commands["wiki"](irc, source, msgtarget, e.options[0])
+    except wikipedia.exceptions.PageError:
+        irc.msg(msgtarget, "No page could be found")
 
 def search(q, n=0):
     r = requests.get("http://duckduckgo.com/lite",
