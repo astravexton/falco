@@ -1,0 +1,1 @@
+This can be safetly deleted; Github doesn't store directories that are empty, so this had to be added.
