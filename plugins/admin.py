@@ -99,11 +99,14 @@ def kick(irc, source, msgtarget, args):
 @add_cmd
 def ban(irc, source, msgtarget, args):
     if isOp(irc, source):
+        reason = None
         try:
             chan, user = args.split(" ",1)
         except ValueError:
             irc.msg(msgtarget, "ban <channel> <nick/host>")
             return
+        if len(user.split(" ", 1)) > 1:
+            user, reason = user.split(" ", 1)
         try:
             bmask = "*!*@"+irc.nicks[user]["host"]
         except KeyError:
@@ -111,7 +114,21 @@ def ban(irc, source, msgtarget, args):
 
         irc.chanmodes[chan].append("MODE {} +b {}".format(chan, bmask))
         if "!" not in user or "@" not in user or "*" not in user:
-            irc.chanmodes[chan].append("{} {} {} :Goodbye".format(irc.conf["kickmethod"], chan, user))
+            irc.chanmodes[chan].append("{} {} {} :{}".format(irc.conf["kickmethod"], chan, user, "Goodbye" if not reason else reason))
+        irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
+
+@add_cmd
+def unban(irc, source, msgtarget, args):
+    if isOp(irc, source):
+        try:
+            chan, user = args.split(" ",1)
+        except ValueError:
+            irc.msg(msgtarget, "unban <channel> <nick/host>")
+        try:
+            bmask = "*!*@"+irc.nicks[user]["host"]
+        except KeyError:
+            bmask = user
+        irc.chanmodes[chan].append("MODE {} -b {}".format(chan, bmask))
         irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
 
 @add_cmd
@@ -185,7 +202,7 @@ add_cmd(_exec, ">")
 
 def _shell(irc, source, msgtarget, args):
     if isAdmin(irc, source):
-        command = "/bin/bash -c -i {}".format(shlex.quote(args[1]+" | ./ircize --remove"))
+        command = "/bin/bash -c {}".format(shlex.quote(args[1]+" | ./ircize --remove"))
         start, lines, dump = time.time(), 0, []
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while True:
@@ -414,7 +431,7 @@ def ddg(irc, source, msgtarget, args):
 def randwiki(irc, source, msgtarget, args):
     rand = wikipedia.random(pages=1)
     url = wikipedia.page(rand).url
-    irc.msg(msgtarget, "Random Article: {} - {}".format(rand, url))
+    irc.msg(msgtarget, "Random Article: {} - \x1d{}\x1d".format(rand, url))
     irc.msg(msgtarget, wikipedia.summary(rand, sentences=2, chars=250, auto_suggest=True))
 
 @add_cmd
@@ -423,7 +440,7 @@ def wiki(irc, source, msgtarget, args):
         url = wikipedia.page(args).url
         page = wikipedia.summary(wikipedia.search(args)[0], sentences=2, auto_suggest=True)
         irc.msg(msgtarget, page)
-        irc.msg(msgtarget, "More at "+url)
+        irc.msg(msgtarget, "More at \x1d"+url)
     except wikipedia.exceptions.DisambiguationError as e:
         bot_commands["wiki"](irc, source, msgtarget, e.options[0])
     except wikipedia.exceptions.PageError:
@@ -444,7 +461,7 @@ def search(q, n=0):
         if res:
             m = re.search("""href="(.*)" rel="nofollow">(.*)<\/a>""", res)
             if m:
-                return "{} - {}".format(HTMLParser().unescape(re.sub("<[^<]+?>", "", m.group(2))), shorten(m.group(1)))
+                return "{} - \x1d{}\x1d".format(HTMLParser().unescape(re.sub("<[^<]+?>", "", m.group(2))), shorten(m.group(1)))
         else:
             return "No results found"
     else:
