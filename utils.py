@@ -18,7 +18,7 @@ class Address(object):
             addr.split("@")[0][addr.find("!")+1:],
             addr.split("@")[1]
            )
-        self.hostmask = addr
+        self.hostmask = addr.replace(":", "", 1)
 
 
 class parseArgs(object):   
