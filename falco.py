@@ -130,7 +130,6 @@ class IRC(threading.Thread):
     def run(self):
  
         self.connect()
-        self.schedulePing() # this seems to not work as expected, will fix at some point
 
         while self.connected:
             try:
@@ -143,6 +142,14 @@ class IRC(threading.Thread):
 
                     line, self.ibuffer = self.ibuffer.split("\r\n", 1)
                     line = line.strip()
+                    
+                    
+                    try:
+                        func = globals()["handle_"+utils.parseArgs(line).type]
+                    except KeyError:
+                        log.warn("No handler for %s found", utils.parseArgs(line).type)
+                    else:
+                        func(self, utils.parseArgs(line))
 
                     log.debug("(%s) -> %s", self.netname, line)
 
@@ -154,19 +161,6 @@ class IRC(threading.Thread):
                     if not args:
                         return
 
-                    elif args[0] == "ERROR":
-                        # ['ERROR', ':Closing', 'Link:', 'falco[meetmehereonirclo.lol]', '(Excess', 'Flood)']
-                        if args[4] == "(Excess" and args[5] == "Flood)":
-                            self.reconnect()
-
-                    elif args[0] == "PING":
-                        # ['PING', ':blah']
-                        self.send("PONG {}".format(args[1]))
-
-                    elif args[0] == "AUTHENTICATE":
-                        func = globals()["handle_AUTHENTICATE"]
-                        func(self, user, args)
-
                     if args[1] == "PONG":
                         self.pingtime = int(time.time() - self.lastping)
                         self.lastping = time.time()
@@ -175,37 +169,10 @@ class IRC(threading.Thread):
                             log.warn("(%s) Lag: %s seconds", self.netname,
                                         round(self.pingtime - self.pingfreq, 3))
 
-                    try:
-                        real_args = []
-                        for arg in args:
-                            real_args.append(arg)
-                            if arg.startswith(':') and args.index(arg) != 0:
-                                index = args.index(arg)
-                                arg = args[index:]
-                                arg = ' '.join(arg)[1:]
-                                real_args = args[:index]
-                                real_args.append(arg)
-                                break
-
-                        real_args[0] = real_args[0].split(':', 1)[1]
-                        args = real_args
-
-                        user = args[0]
-                        command = args[1]
-                        args = args[2:]
-
-                        try:
-                            func = globals()['handle_'+command]
-                        except KeyError as e:
-                            pass
-                        else:
-                            func(self, user, args)
-
-                    except IndexError:
-                        continue
-
             except KeyboardInterrupt:
-                #self.shelve.close()
+                self.pingTimer.stop()
+                self.schedulePing() # writes nicks and channels to files,
+                                    # will be moved to own function eventually
                 self.disconnect("CTRL-C at console.")
 
     def msg(self, target, message, reply=None):
@@ -219,15 +186,11 @@ class IRC(threading.Thread):
     def kick(self, chan, target, message="Goodbye"):
         self.send("KICK {} {} :{}".format(chan, target, message))
 
-    #def join(self, chan):
-    #    self.send("JOIN {}".format(chan))
-
     def send(self, data):
         data = data.replace('\n', ' ').replace("\a", "")
         data = data.encode("utf-8") + b"\n"
         stripped_data = data.decode("utf-8").strip("\n")
-        if "PASS " not in stripped_data: # don't print PASS output
-            log.debug("(%s) <- %s", self.netname, stripped_data)
+        log.debug("(%s) <- %s", self.netname, stripped_data)
         self.tx += len(data)
         self.txmsgs += 1
         try:
@@ -263,6 +226,7 @@ class IRC(threading.Thread):
         self.send("NICK {}".format(self.nick))
         self.ibuffer = ""
         log.debug("(%s) Running main loop", self.netname)
+        self.schedulePing() # this seems to not work as expected, will fix at some point
         self.connected = True
 
     def disconnect(self, quit=None, terminate=True):
@@ -301,7 +265,10 @@ if __name__ == "__main__":
 
     reload_handlers(init=True)
 
-    for server in conf.values():
-        utils.connections[server["netname"]] = IRC(server)
-    reload_plugins(init=True)
-    connectall()
+    try:
+        for server in conf.values():
+            utils.connections[server["netname"]] = IRC(server)
+        reload_plugins(init=True)
+        connectall()
+    except KeyboardInterrupt:
+        print(" - exiting")

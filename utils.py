@@ -11,6 +11,38 @@ command_hooks = defaultdict(list)
 connections = dict()
 mtimes = {}
 
+class Address(object):
+    def __init__(self, addr):
+        self.nick, self.ident, self.mask = (
+            addr[:addr.find("!")][1:],
+            addr.split("@")[0][addr.find("!")+1:],
+            addr.split("@")[1]
+           )
+        self.hostmask = addr
+
+
+class parseArgs(object):   
+    def __init__(self, args):
+        args = args.split(" ")
+        real_args = []
+        for idx, arg in enumerate(args):
+            real_args.append(arg)
+            if arg.startswith(':') and idx != 0:
+                arg = args[idx:]
+                arg = ' '.join(arg)[1:]
+                real_args = args[:idx]
+                real_args.append(arg)
+                break
+        if "@" not in real_args[0]:
+            self.sender = real_args[0]
+        else:
+            self.sender = Address(real_args[0])
+        self.type = real_args[1]
+        self.args = real_args[2:]
+        if not args[0].startswith(":"):
+            self.sender = None
+            self.type, self.args = real_args[0:]
+
 def shorten(url, custom=None, key=None):
     p = {'url': url, 'shorturl': custom, 'format': 'json'}
     r = requests.get('http://is.gd/create.php', params=p)
@@ -242,7 +274,7 @@ def timesince(d, now=None):
             if count2 == 1:
                 s += ', %d %s' % (count2, name2[0])
             else:
-                s += ', %d %s' % (count2, name2[1])
+                s += ' and %d %s' % (count2, name2[1])
     return s
 
 

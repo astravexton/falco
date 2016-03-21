@@ -516,7 +516,6 @@ def history(irc, source, msgtarget, args):
             data = "\n".join(data)
         else:
             data = "\n".join(irc.channels[msgtarget]["buffer"][-count:])
-        print(data)
         key = requests.post("http://bin.zyr.io/documents", data=data.encode(), timeout=5).json()
         irc.msg(msgtarget, source.split("!")[0]+": http://bin.zyr.io/"+key["key"])
     else:

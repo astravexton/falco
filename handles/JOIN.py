@@ -1,15 +1,11 @@
 import fnmatch, time
 
-def handle_JOIN(irc, source, args):
-    # args: ["#channel"]
-    # source: |!Karkat@hide-A31D54D.zyr.io
-    #if source.split("!")[0] != irc.bot["nick"]:
-    #    irc.send("WHOWAS {}".format(source.split("!")[0]))
+def handle_JOIN(irc, args):
 
-    chan = args[0]
-    nick = source.split("!")[0]
-    ident = source.split("!")[1].split("@")[0]
-    host = source.split("@")[1]
+    chan = args.args[0]
+    nick = args.sender.nick
+    ident = args.sender.ident
+    host = args.sender.mask
 
     irc.chanmodes[chan] = list()
 
@@ -17,7 +13,8 @@ def handle_JOIN(irc, source, args):
         irc.channels[chan] = {
             "modes": (),
             "nicks": dict(),
-            "buffer": []
+            "buffer": [],
+            "autojoin": False
         }
 
     if nick not in irc.nicks:
@@ -42,7 +39,7 @@ def handle_JOIN(irc, source, args):
 
     irc.channels[chan]["nicks"][nick] = ""
 
-    if chan not in ["##chat-bridge"]:
+    if chan not in irc.conf.get("donotlog", []):
         irc.nicks[nick]["lastaction"] = {"action": "JOIN", "args": None, "time": time.time(), "chan": chan}
 
     if chan in irc.autokick:

@@ -1,9 +1,8 @@
-def handle_NICK(irc, source, args):
+def handle_NICK(irc, args):
     # source: nathan!nathan@392D2D96.A2275890.DCE72A8F.IP
     # args: ['nathanaan']
-    oldnick, host = source.split("!"), source.split("@")[1]
-    oldnick, ident = oldnick[0], oldnick[1].split("@")[0]
-    newnick = args[0]
+    oldnick = args.sender.nick
+    newnick = args.args[0]
 
     if oldnick == irc.nick:
         irc.nick = newnick

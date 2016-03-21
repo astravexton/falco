@@ -1,5 +1,4 @@
 
-def handle_TOPIC(irc, source, args):
-    chan, topic = args
-    set_by = source
+def handle_TOPIC(irc, args):
+    chan, topic = args.args
     irc.channels[chan]["topic"] = topic

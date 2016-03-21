@@ -28,7 +28,8 @@ IRC bot that does stuff, now supports multiple connections!
         "ignored": [],
         "filter": {},
         "autokick": {},
-        "blacklisted_commands": {"#test": ["yt"]}
+        "blacklisted_commands": {"#test": ["yt"]},
+        "donotlog": []
     },
     "server2": {
         ...
