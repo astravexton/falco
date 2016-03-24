@@ -130,9 +130,7 @@ class IRC(threading.Thread):
         self.ops            = self.conf.get("ops", [])
 
     def run(self):
- 
         self.connect()
-
         self.connected = True
         while self.connected:
             try:
