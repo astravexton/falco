@@ -74,7 +74,10 @@ def handle_324(irc, args):
     chan = args.args[1]
     modes = args.args[2:]
     irc.channels[chan]["modes"] = parse_modes(irc, modes)["add"]
-    irc.send("WHO {}".format(chan))
+    if "extended-join" in irc.cap:
+        irc.send("WHO {} %tcuihnar,314".format(chan))
+    else:
+        irc.send("WHO {}".format(chan))
     # TODO: send WHO differently if connected to charybdis to get account NAMES
     # TODO: parse WHO output depending on the type of server
 
@@ -129,6 +132,26 @@ def handle_353(irc, args):
             prefix = ""
 
         irc.channels[chan]["nicks"][nick] = prefix
+
+def handle_354(irc, args):
+    # ['falco-devel', '314', '#Zyrio', 'gl', '45.79.66.40', 'millennium.overdrivenetworks.com', 'GLolol', '0', "You can't be serious."]
+    tgt, magic, chan, user, realip, host, nick, account, gecos = args.args
+    if magic == "314":
+        if nick not in irc.nicks:
+            irc.nicks[nick] = {
+                "nick": nick,
+                "ident": user,
+                "host": host,
+                "gecos": gecos,
+                "channels": list(),
+                "server": None,
+                "account": account
+            }
+        else:
+            irc.nicks[nick]["ident"] = user
+            irc.nicks[nick]["host"] = host
+            irc.nicks[nick]["gecos"] = gecos
+            irc.nicks[nick]["account"] = account
 
 def handle_366(irc, args):
     # ['nathan', '#test', 'End of /NAMES list.']

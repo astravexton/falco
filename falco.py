@@ -99,6 +99,8 @@ class IRC(threading.Thread):
         self.color          = 14
         self.buffermaxlen   = 16003
         self.identified     = False
+        self.cap            = []
+        self.capdone        = False
         try:
             self.nicks      = json.load(open("data/{}-nicks.json".format(self.netname)))
             self.channels   = json.load(open("data/{}-channels.json".format(self.netname)))
@@ -131,6 +133,7 @@ class IRC(threading.Thread):
  
         self.connect()
 
+        self.connected = True
         while self.connected:
             try:
                 data = utils.decode(self.socket.recv(2048))
@@ -218,16 +221,14 @@ class IRC(threading.Thread):
         self.socket = socket.create_connection((self.server, self.port))
         if self.ssl:
             self.socket = wrap_socket(self.socket)
+        self.send("CAP LS")
         if self.conf.get("password"):
             self.send("PASS {}".format(self.conf["password"]))
         self.send("USER {} 0 * :{}".format(self.user, self.gecos))
-        if self.conf.get("sasl"):
-            self.send("CAP REQ :multi-prefix sasl")
         self.send("NICK {}".format(self.nick))
         self.ibuffer = ""
         log.debug("(%s) Running main loop", self.netname)
         self.schedulePing() # this seems to not work as expected, will fix at some point
-        self.connected = True
 
     def disconnect(self, quit=None, terminate=True):
         self.send("QUIT :{}".format("Goodbye" if not quit else quit))

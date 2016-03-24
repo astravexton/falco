@@ -3,6 +3,9 @@ import fnmatch, time
 def handle_JOIN(irc, args):
 
     chan = args.args[0]
+    account = None
+    if len(args.args) > 1:
+        account = args.args[1]
     nick = args.sender.nick
     ident = args.sender.ident
     host = args.sender.mask
@@ -24,11 +27,13 @@ def handle_JOIN(irc, args):
             "host": host,
             "gecos": None,
             "channels": list(),
-            "server": None
+            "server": None,
+            "account": account
         }
     elif nick in irc.nicks:
         irc.nicks[nick]["ident"] = ident
         irc.nicks[nick]["host"] = host
+        irc.nicks[nick]["account"] = account
     try:
         irc.nicks[nick]["channels"].append(chan)
     except:
