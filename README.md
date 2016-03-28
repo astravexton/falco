@@ -38,7 +38,9 @@ IRC bot that does stuff, now supports multiple connections!
 
 ```
 
-To run the bot, type
-```
-python3 falco.py <config.json>
-```
+To run the bot, first do `sudo pip3 install -r requirements.txt`, then `python3 falco.py <config.json>`
+
+------------------------------------
+
+I have no idea if this runs on Windows and don't plan on adding support for it if it doesn't.
+Please do not bug me about this as I won't help.
