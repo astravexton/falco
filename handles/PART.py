@@ -17,4 +17,5 @@ def handle_PART(irc, args):
         del irc.channels[chan]["nicks"][nick]
     except KeyError:
         pass
-
+    except ValueError:
+        pass
