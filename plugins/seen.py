@@ -33,6 +33,10 @@ def seen(irc, source, msgtarget, args):
             elif s["action"] == "QUIT":
                 irc.msg(msgtarget, "{} ({}@{}) was seen quitting about {} ago ({})".format(
                     nick, n["ident"], n["host"], timesince(s["time"]), s["args"]))
+            elif s["action"] == "KICK":
+                irc.msg(msgtarget, "{} ({}@{}) was last seen kicked from {} about {} ago ({})".format(
+                    nick, n["ident"], n["host"], s["chan"], timesince(s["time"]), s["args"]
+                ))
     
         except:
             if nick == irc.nick:

@@ -35,7 +35,8 @@ def handle_JOIN(irc, args):
         irc.nicks[nick]["host"] = host
         irc.nicks[nick]["account"] = account
     try:
-        irc.nicks[nick]["channels"].append(chan)
+        if chan not in irc.nicks[nick]["channels"]:
+            irc.nicks[nick]["channels"].append(chan)
     except:
         print("{} not in irc.nicks".format(nick))
 

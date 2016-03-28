@@ -191,7 +191,7 @@ class IRC(threading.Thread):
 
     def send(self, data):
         data = data.replace('\n', ' ').replace("\a", "")
-        data = data.encode("utf-8") + b"\n"
+        data = data.encode("utf-8") + b"\r\n"
         stripped_data = data.decode("utf-8").strip("\n")
         log.debug("(%s) <- %s", self.netname, stripped_data)
         self.tx += len(data)
