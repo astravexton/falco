@@ -153,7 +153,6 @@ def handle_354(irc, args):
             irc.nicks[nick]["gecos"] = gecos
             irc.nicks[nick]["account"] = account
         if chan not in irc.nicks[nick]["channels"]:
-            print(nick,chan)
             irc.nicks[nick]["channels"].append(chan)
 
 def handle_366(irc, args):
