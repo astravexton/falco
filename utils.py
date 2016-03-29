@@ -201,14 +201,16 @@ def isAdmin(irc, user):
     for admin in irc.admins["hosts"]:
         if fnmatch.fnmatch(user, admin):
             return True
-    if "$a:"+user.split("!")[0] in irc.admins["accounts"]:
-        return True
+    try:
+        account = irc.nicks[user.split("!")[0]]["account"]
+        if account in irc.admins["accounts"]:
+            return True
+    except:
+        return False
 
     return False
 
 def isOp(irc, user):
-    if "$a:"+user.split("!")[0] in irc.admins["accounts"]:
-        return True
     for admin in irc.admins:
         if fnmatch.fnmatch(user, admin):
             return True
