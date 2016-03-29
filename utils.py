@@ -198,12 +198,17 @@ def parse_modes(irc, modes):
     return {"add": add, "rem": rem}
 
 def isAdmin(irc, user):
-    for admin in irc.admins:
+    for admin in irc.admins["hosts"]:
         if fnmatch.fnmatch(user, admin):
             return True
+    if "$a:"+user.split("!")[0] in irc.admins["accounts"]:
+        return True
+
     return False
 
 def isOp(irc, user):
+    if "$a:"+user.split("!")[0] in irc.admins["accounts"]:
+        return True
     for admin in irc.admins:
         if fnmatch.fnmatch(user, admin):
             return True
