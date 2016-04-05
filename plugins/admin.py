@@ -20,9 +20,26 @@ def info(irc, source, msgtarget, args):
     irc.msg(msgtarget, "Created by nathan/doge, you can find me in ##doge on irc.freenode.net or #programming on irc.subluminal.net")
 
 @add_cmd
+def account2nick(irc, source, msgtarget, args):
+    """account2nick <wildcard> -- returns matches against <wildcard>"""
+    if isAdmin(irc, source):
+        if args:
+            matches = []
+            for nick in irc.nicks:
+                if "account" in irc.nicks[nick]:
+                    if fnmatch.fnmatch(irc.nicks[nick]["account"], args) == True:
+                        matches.append(nick+" ["+irc.nicks[nick]["account"]+"]")
+            if len(matches) > 4:
+                key = requests.post("http://bin.zyr.io/documents", data="\n".join(matches).encode(), timeout=5).json()
+                irc.msg(msgtarget, "http://bin.zyr.io/"+key["key"]+".txt")
+            elif len(matches) < 4:
+                for match in matches:
+                    irc.msg(msgtarget, match)
+
+@add_cmd
 def host2nick(irc, source, msgtarget, args):
     """host2nick <wildcard> -- returns matches against <wildcard>"""
-    if isOp(irc, source):
+    if isAdmin(irc, source):
         if args:
             matches = []
             for nick in irc.nicks:

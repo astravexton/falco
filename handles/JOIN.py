@@ -50,6 +50,6 @@ def handle_JOIN(irc, args):
 
     if chan in irc.autokick:
         for user in irc.autokick[chan]:
-            if fnmatch.fnmatch(source, user) or fnmatch.fnmatch(source.split("!")[0], user):
-                irc.chanmodes[chan].append("KICK {} {} :Goodbye (autokick)".format(chan, source.split("!")[0]))
+            if fnmatch.fnmatch(args.sender.hostmask, user) or fnmatch.fnmatch(nick, user):
+                irc.chanmodes[chan].append("KICK {} {} :Goodbye (autokick)".format(chan, nick))
                 irc.send("PRIVMSG ChanServ :OP {}".format(chan))

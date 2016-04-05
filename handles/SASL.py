@@ -7,13 +7,13 @@ def handle_CAP(irc, args):
             caps = args.args[2].split(" ")
             if "extended-join" in caps:
                 irc.cap.append("extended-join")
-            if irc.conf.get("sasl") and "sasl" in caps:
+            if irc.conf.get("sasl"):
                 irc.cap.append("sasl")
             if irc.cap:
                 irc.send("CAP REQ :{}".format(" ".join(irc.cap)))
             if not irc.cap:
                 irc.send("CAP END")
-    
+
         elif args.args[1] == "ACK":
             if irc.conf.get("sasl"):
                 irc.send("AUTHENTICATE PLAIN")
