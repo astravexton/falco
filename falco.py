@@ -70,7 +70,7 @@ mtimes = dict()
 
 class IRC(threading.Thread):
 
-    def __init__(self, conf):
+    def __init__(self, conf, config_file):
         threading.Thread.__init__(self)
         #self.daemon         = True
         self.data_dir       = "data/"
@@ -268,7 +268,7 @@ if __name__ == "__main__":
 
     try:
         for server in conf.values():
-            utils.connections[server["netname"]] = IRC(server)
+            utils.connections[server["netname"]] = IRC(server, config_file)
         reload_plugins(init=True)
         connectall()
     except KeyboardInterrupt:
