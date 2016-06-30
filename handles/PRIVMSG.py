@@ -12,9 +12,8 @@ def handle_NOTICE(irc, args):
     ident = source.split("!")[1].split("@")[0]
     address = source.split("@")[1]
     chan, message = args
-
     if nick == "NickServ" and irc.identified == False:
-        if "This nickname is registered." in message:
+        if "This nickname is registered." in message or "If you do not change your nickname" in message:
             irc.send("PRIVMSG NickServ :identify {}".format(irc.conf["nickserv_password"]))
         elif "You are now identified" in message:
             irc.identified = True

@@ -219,7 +219,7 @@ add_cmd(_exec, ">")
 
 def _shell(irc, source, msgtarget, args):
     if isAdmin(irc, source):
-        command = "/bin/bash -c {}".format(shlex.quote(args[1]+" | ./ircize --remove"))
+        command = "/bin/bash -c {}".format(shlex.quote(args[1]+" | ircize --remove"))
         start, lines, dump = time.time(), 0, []
         process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while True:
@@ -543,4 +543,3 @@ def history(irc, source, msgtarget, args):
                 elif not word:
                     irc.msg(source.split("!")[0], line)
                 c +=1
-

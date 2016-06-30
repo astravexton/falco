@@ -205,13 +205,15 @@ def handle_MODE(irc, args):
 def handle_433(irc, args):
 
     getNewNick(irc, args.args[1])
+    if args.args == "Nickname is registered to someone else":
+        irc.send("PRIVMSG NickServ :identify {}".format(irc.conf.get("nickserv_password")))
 
-    if args.args[-1] == "Nickname is already in use.":
+    elif args.args[-1] == "Nickname is already in use.":
         irc.send("NICK {}".format(irc.nick))
 
 def handle_432(irc, args):
 
     getNewNick(irc, args.args[1])
 
-    if args[-1] == "Erroneous Nickname":
+    if args.args[-1] == "Erroneous Nickname":
         irc.send("NICK {}".format(irc.nick))

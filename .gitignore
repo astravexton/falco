@@ -8,3 +8,5 @@ www/
 *.json
 ircize
 antispam.py
+enc.py
+plugins-disabled

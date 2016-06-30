@@ -1,5 +1,5 @@
 from utils import add_cmd, time_expression, seconds_map, parse_time
-import time, re, requests
+import time, re, requests, urllib
 
 @add_cmd
 def sleep(irc, source, msgtarget, args):
@@ -24,3 +24,5 @@ def zeroclick(irc, source, msgtarget, args):
         irc.msg(msgtarget, abstract[0:300])
     if abstract_url:
         irc.msg(msgtarget, "More at "+abstract_url)
+    if not stripped_answer and not abstract and not abstract_url:
+        irc.msg(msgtarget, "Nothing found, you can try https://duckduckgo.com/?q={}".format(urllib.request.quote(args)))

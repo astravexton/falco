@@ -184,7 +184,7 @@ class IRC(threading.Thread):
             self.send("{} {} :\x03{}│\x0f {}".format(reply, target, self.color, message))
         else:
             self.send("{} {} :{}".format(reply, target, message))
-        time.sleep(0.75)
+        time.sleep(0.3)
 
     def kick(self, chan, target, message="Goodbye"):
         self.send("KICK {} {} :{}".format(chan, target, message))
