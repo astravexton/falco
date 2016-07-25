@@ -107,6 +107,8 @@ class IRC(threading.Thread):
         except FileNotFoundError: 
             self.channels       = {}
             self.nicks          = {}
+        except json.decoder.JSONDecodeError as e:
+            sys.exit("{} - {}".format(e, self.netname))
         self.title_snarfer_allowed      = []
         self.title_snarfer_ignored_urls = []
 
