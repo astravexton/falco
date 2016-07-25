@@ -2,17 +2,17 @@ import re, requests
 from html.parser import HTMLParser
 from utils import *
 
-youtube_regex = """<a href="\s\s\/(.*?)&amp(.*?)\n">\n(.*?)\n<\/a>\n<\/div>\n<div(.*?)>\n(.*?)\n<\/div>\n<div(.*?)>\n(.*?)\n<\/div>\n<div(.*?)>\n(.*?)\n<\/div>"""
-
 def youtube(irc, source, msgtarget, args):
     """youtube/yt <query> -- returns the first result for <query>"""
-    r = requests.get("https://m.youtube.co.uk/results", params={"search_query":args,"app":"m"}).content.decode()
-    videos = re.findall(youtube_regex, r)
-    try:
-        irc.msg(msgtarget, "https://youtu.be/{} \x0304│\x03 {} \x0304│\x03 {} \x0304│\x03 {} \x0304│\x03 {}".format(
-                videos[0][0].split("=")[-1],HTMLParser().unescape(videos[0][2]),videos[0][4] or "#Live",HTMLParser().unescape(videos[0][6]),videos[0][8]))
-    except IndexError:
-        irc.msg(msgtarget, "No results found")
+    yt = YTsearch(args)
+    s = "http://youtu.be/{url} │ {title} │ {uploader} │ {views} views"
+    irc.msg(msgtarget, s.format(
+        url=yt["items"][0]["id"],
+        title=yt["items"][0]["snippet"]["title"],
+        uploader=yt["items"][0]["snippet"]["channelTitle"],
+        views="{:,}".format(int(yt["items"][0]["statistics"]["viewCount"])))
+    )
 
 add_cmd(youtube, "yt")
 add_cmd(youtube, "youtube")
+

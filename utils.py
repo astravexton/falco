@@ -4,6 +4,33 @@ from log import log
 
 global bot_commands, bot_regexes, connections
 
+api_keys = []
+
+def lookup(id):
+    params = {
+        "part": "id,snippet,contentDetails,statistics,status,liveStreamingDetails",
+        "id": id,
+        "key": api_keys["youtube"]
+    }
+    p = requests.get("https://www.googleapis.com/youtube/v3/videos", params=params)
+    if p.ok:
+        return p.json()
+
+def YTsearch(q):
+    params = {
+        "q": q,
+        "part": "id",
+        "maxResults": 1,
+        "type": "video",
+        "key": api_keys["youtube"]
+    }
+    p = requests.get("https://www.googleapis.com/youtube/v3/search", params=params)
+    if p.ok:
+        ids = []
+        for video in p.json()["items"]:
+            ids.append(video["id"]["videoId"])
+        return lookup(",".join(ids))
+
 plugins = []
 bot_commands = {}
 bot_regexes = {}

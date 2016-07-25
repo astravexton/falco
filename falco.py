@@ -101,6 +101,7 @@ class IRC(threading.Thread):
         self.identified     = False
         self.cap            = []
         self.capdone        = False
+        utils.api_keys      = self.conf["api_keys"]
         try:
             self.nicks      = json.load(open("data/{}-nicks.json".format(self.netname)))
             self.channels   = json.load(open("data/{}-channels.json".format(self.netname)))
