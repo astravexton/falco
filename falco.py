@@ -1,11 +1,17 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-import glob, os, socket, time, re, sys, json
+import glob
+import os
+import socket
+import time
+import re
+import sys
+import json
 import threading
+import imp
 from ssl import wrap_socket
 from log import log
 import utils
-import imp
 
 def reload_handlers(init=False):
     handlers = set(glob.glob(os.path.join("handles", "*.py")))
@@ -72,45 +78,45 @@ class IRC(threading.Thread):
 
     def __init__(self, conf, config_file):
         threading.Thread.__init__(self)
-        #self.daemon         = True
-        self.data_dir       = "data/"
+        #self.daemon = True
+        self.data_dir = "data/"
         os.makedirs(self.data_dir, exist_ok=True)
-        self.conf           = conf
-        self.conf_mtime     = os.stat(config_file).st_mtime
-        self.netname        = self.conf["netname"]
-        self.rx             = 0
-        self.tx             = 0
-        self.txmsgs         = 0
-        self.rxmsgs         = 0
-        self.started        = 0
-        self.server         = self.conf["server"]
-        self.port           = self.conf["port"]
-        self.ssl            = self.conf["ssl"]
-        self.nick           = self.conf["nick"]
-        self.pingfreq       = 30
-        self.pingtimeout    = self.pingfreq*2
-        self.pingwarn       = 5
-        self.password       = "6675636b796f75"
-        self.prefixmodes    = {'q': '~', 'a': '&', 'v': '+', 'o': '@', 'h': '%'}
-        self.connected      = False
-        self.chanmodes      = {}
-        self.modes          = []
-        self.hasink         = True
-        self.color          = 14
-        self.buffermaxlen   = 16003
-        self.identified     = False
-        self.cap            = []
-        self.capdone        = False
-        utils.api_keys      = self.conf["api_keys"]
+        self.conf = conf
+        self.conf_mtime = os.stat(config_file).st_mtime
+        self.netname = self.conf["netname"]
+        self.rx = 0
+        self.tx = 0
+        self.txmsgs = 0
+        self.rxmsgs = 0
+        self.started = 0
+        self.server = self.conf["server"]
+        self.port = self.conf["port"]
+        self.ssl = self.conf["ssl"]
+        self.nick = self.conf["nick"]
+        self.pingfreq = 30
+        self.pingtimeout = self.pingfreq*2
+        self.pingwarn = 5
+        self.password = "6675636b796f75"
+        self.prefixmodes = {'q': '~', 'a': '&', 'v': '+', 'o': '@', 'h': '%'}
+        self.connected = False
+        self.chanmodes = {}
+        self.modes = []
+        self.hasink = True
+        self.color = 14
+        self.buffermaxlen = 16003
+        self.identified = False
+        self.cap = []
+        self.capdone = False
+        utils.api_keys = self.conf["api_keys"]
         try:
-            self.nicks      = json.load(open("data/{}-nicks.json".format(self.netname)))
-            self.channels   = json.load(open("data/{}-channels.json".format(self.netname)))
+            self.nicks = json.load(open("data/{}-nicks.json".format(self.netname)))
+            self.channels = json.load(open("data/{}-channels.json".format(self.netname)))
         except FileNotFoundError: 
-            self.channels       = {}
-            self.nicks          = {}
+            self.channels = {}
+            self.nicks = {}
         except json.decoder.JSONDecodeError as e:
             sys.exit("{} - {}".format(e, self.netname))
-        self.title_snarfer_allowed      = []
+        self.title_snarfer_allowed = []
         self.title_snarfer_ignored_urls = []
 
         self.pingTimer = None
@@ -121,16 +127,16 @@ class IRC(threading.Thread):
 
     def reloadConfig(self):
 
-        self.reply          = self.conf["reply"]
-        self.user           = self.conf["ident"]
-        self.gecos          = self.conf["gecos"]
-        self.setmodes       = self.conf["modes"]
-        self.prefix         = self.conf["prefix"]
-        self.admins         = self.conf["admins"]
-        self.autojoin       = self.conf["autojoin"]
-        self.ignored        = self.conf["ignored"]
-        self.autokick       = self.conf["autokick"]
-        self.ops            = self.conf.get("ops", [])
+        self.reply = self.conf["reply"]
+        self.user = self.conf["ident"]
+        self.gecos = self.conf["gecos"]
+        self.setmodes = self.conf["modes"]
+        self.prefix = self.conf["prefix"]
+        self.admins = self.conf["admins"]
+        self.autojoin = self.conf["autojoin"]
+        self.ignored = self.conf["ignored"]
+        self.autokick = self.conf["autokick"]
+        self.ops = self.conf.get("ops", [])
 
     def run(self):
  
