@@ -43,7 +43,7 @@ def handle_PRIVMSG(irc, args):
         elif chan.lower() == user.lower():
             ignored = True
 
-    if isAdmin(irc, args.sender.hostmask) or isOp(irc, args.sender.hostmask):
+    if isAdmin(irc, args.sender) or isOp(irc, args.sender):
         ignored = False
 
     if ignored == False:
@@ -67,7 +67,7 @@ def handle_PRIVMSG(irc, args):
             m = regex.search(message)
             if m:
                 #log.info("(%s) Calling regex for %s", irc.netname, func.__name__)
-                c = threading.Thread(target=func, args=(irc, args.sender.hostmask, chan, m.groups()))
+                c = threading.Thread(target=func, args=(irc, args.sender, chan, m.groups()))
                 c.daemon = True
                 c.start()
 
@@ -92,8 +92,8 @@ def handle_PRIVMSG(irc, args):
 
             else:
                 try:
-                    #log.info("(%s) Calling command %r", irc.netname, command)
-                    threading.Thread(target=func, args=(irc, args.sender.hostmask, chan, cmdargs)).start()
+                    log.info("(%s) Calling command %r", irc.netname, command)
+                    threading.Thread(target=func, args=(irc, args.sender, chan, cmdargs)).start()
 
                 except Exception as e:
                     log.exception("(%s) Unhandled exception caught in command %r", irc.netname, command)
