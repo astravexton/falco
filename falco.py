@@ -62,7 +62,7 @@ def reload_config():
             with open(config_file, "r") as f:
                 conf = json.load(f)
             irc.conf_mtime = os.stat(config_file).st_mtime
-            irc.conf = conf[irc.netname]
+            irc.conf = conf["servers"][irc.netname]
             irc.reloadConfig()
             log.debug("(%s) Reloaded config", irc.netname)
 
@@ -107,7 +107,6 @@ class IRC(threading.Thread):
         self.identified = False
         self.cap = []
         self.capdone = False
-        utils.api_keys = self.conf["api_keys"]
         try:
             self.nicks = json.load(open("data/{}-nicks.json".format(self.netname)))
             self.channels = json.load(open("data/{}-channels.json".format(self.netname)))
@@ -275,8 +274,9 @@ if __name__ == "__main__":
 
     reload_handlers(init=True)
 
+    utils.api_keys = conf["api_keys"]
     try:
-        for server in conf.values():
+        for server in conf["servers"].values():
             utils.connections[server["netname"]] = IRC(server, config_file)
         reload_plugins(init=True)
         connectall()
