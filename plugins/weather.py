@@ -17,7 +17,7 @@ def main(irc):
 @add_cmd
 def weather(irc, source, msgtarget, args):
     try:
-        loc = args or irc.weather[source.split("!")[0]]
+        loc = args or irc.weather[source.nick]
     except KeyError:
         irc.msg(msgtarget, "Enter a location")
         return
@@ -31,7 +31,7 @@ def weather(irc, source, msgtarget, args):
         wind_speed_kmh = MPHtoKMH(wind_speed_mph)
         wind_direction = DEGtoDIR(int(data["wind"]["deg"]))
         clouds_description = data["weather"][0]["main"]
-        irc.weather[source.split("!")[0]] = loc
+        irc.weather[source.nick] = loc
         f = open("data/"+irc.server+"-weather.json", "w")
         f.write(json.dumps(irc.weather))
         f.close()
@@ -42,7 +42,7 @@ def weather(irc, source, msgtarget, args):
 
 @add_cmd
 def forecast(irc, source, msgtarget, args):
-    loc = args or irc.weather[source.split("!")[0]]
+    loc = args or irc.weather[source.nick]
     try:
         data = requests.get("http://api.openweathermap.org/data/2.5/forecast", params={"q": loc, "type": "like", "units": "metric", "appid":"9550e98046c22e2fdf63133946e2cc49"}, headers={"user-agent":"Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0"}).json()
         city = "{}, {}".format(data["city"]["name"],data["city"]["country"])

@@ -67,21 +67,6 @@ def ignore(irc, source, msgtarget, args):
             irc.msg(msgtarget, "ignore <nick/host/#channel>")
 
 @add_cmd
-def dict(irc, source, msgtarget, args):
-    """dict <query> -- returns up to 4 definitions of <query>"""
-    r = requests.get("http://dictionary.reference.com/browse/"+args).content.decode()
-    soup = BeautifulSoup(r)
-    meanings = soup.find_all("div")[34].find_all("div", "def-content")
-    if len(meanings) > 0:
-        for x in range(4):
-            try:
-                irc.msg(msgtarget, "{}.{}".format(x+1, re.sub("<[^<]+?>", "", meanings[x].decode())))
-            except KeyError:
-                pass
-    else:
-        irc.msg(msgtarget, "Nothing found for {}".format(args))
-
-@add_cmd
 def remove(irc, source, msgtarget, args):
     """remove <#channel> <nick> [reason] -- removes <nick> from <#channel> with optional [reason]"""
     if isOp(irc, source):
@@ -183,27 +168,10 @@ def quiet(irc, source, msgtarget, args):
 @add_cmd
 def help(irc, source, msgtarget, args):
     try:
-        irc.msg(source.split("!")[0], bot_commands[args].__doc__)
+        irc.msg(source.nick, bot_commands[args].__doc__)
     except:
         cmds = ", ".join(bot_commands.keys())
-        irc.msg(source.split("!")[0], "Commands: {}".format(cmds))
-
-@add_cmd
-def steam(irc, source, msgtarget, args):
-    if args:
-        r = requests.get("http://store.steampowered.com/search/suggest", params={"term":args, "f":"games", "cc":"US"}).content.decode()
-        m = """href="(.*?)"><div class="match_name">(.*?)<\/div>(.*?)<div class="match_price">(.*?)<\/div>"""
-        gamelist = re.findall(m, r)
-        c, total = 0, 0
-        if len(gamelist) > 1:
-            for game in gamelist:
-                if c < 3:
-                    irc.msg(msgtarget, "{} - {} - {}".format(game[1], game[3], game[0].split("?")[0]))
-                    c=c+1
-                else:
-                    total+=1
-            if total > 3:
-                irc.msg(msgtarget, "and {} more".format(total))
+        irc.msg(source.nick, "Commands: {}".format(cmds))
 
 def _exec(irc, source, msgtarget, args):
     if isAdmin(irc, source):
@@ -252,15 +220,11 @@ def choose(irc, source, msgtarget, args):
     if len(choices) > 1 and choices:
         choice = random.choice(choices).strip()
         if choice:
-            irc.hasink = False
-            irc.msg(msgtarget, "{}: {}".format(source.split("!")[0], choice), reply="PRIVMSG")
-            irc.hasink = True
+            irc.send("PRIVMSG {} :{}: {}".format(msgtarget, source.nick, choice))
         elif not choice:
-            irc.msg(msgtarget, "{}: I can't give you any choice".format(source.split("!")[0]))
+            irc.msg(msgtarget, "{}: I can't give you any choice".format(source.nick))
     elif len(choices) == 1:
-        irc.hasink = False
-        irc.msg(msgtarget, "{}: {}".format(source.split("!")[0], args[0]), reply="PRIVMSG")
-        irc.hasink = True
+        irc.send("PRIVMSG {} :{}: {}".format(msgtarget, source.nick, args[0]))
 
 add_regex(choose, "^\.choose (.*)")
 
@@ -338,7 +302,7 @@ def autokick(irc, source, msgtarget, args):
 
 @add_cmd
 def whoami(irc, source, msgtarget, args):
-    irc.msg(msgtarget, "{}; admin: {}; op: {}".format(source,
+    irc.msg(msgtarget, "{}; admin: {}; op: {}".format(source.hostmask,
         1 if isAdmin(irc, source) else 0,
         1 if isOp(irc, source) else 0))
 
@@ -388,10 +352,6 @@ def zeroclick(irc, source, msgtarget, args):
         irc.msg(msgtarget, "No results found.")
 
 add_regex(zeroclick, "^>\?(.*)")
-
-@add_cmd
-def spell(irc, source, msgtarget, args):
-    zeroclick(irc, source, msgtarget, ["spell {}".format(args)])
 
 def metrictime(irc, source, msgtarget, args):
     "metrictime <current/<hours(0-23)>:<minutes(0-59)>:<seconds(0-59)>> -- convert 24-hour time into metric time"

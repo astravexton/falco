@@ -226,10 +226,10 @@ def parse_modes(irc, modes):
 
 def isAdmin(irc, user):
     for admin in irc.admins["hosts"]:
-        if fnmatch.fnmatch(user, admin):
+        if fnmatch.fnmatch(user.hostmask, admin):
             return True
     try:
-        account = irc.nicks[user.split("!")[0]]["account"]
+        account = irc.nicks[user.nick]["account"]
         if account in irc.admins["accounts"]:
             return True
     except:
@@ -239,13 +239,13 @@ def isAdmin(irc, user):
 
 def isOp(irc, user):
     for admin in irc.admins:
-        if fnmatch.fnmatch(user, admin):
+        if fnmatch.fnmatch(user.hostmask, admin):
             return True
     for ops in irc.ops:
-        if fnmatch.fnmatch(user, ops):
+        if fnmatch.fnmatch(user.hostmask, ops):
             return True
     try:
-        return True if user.split("!")[0] in irc.channels["##chat-bridge"]["nicks"] else False
+        return True if user.nick in irc.channels["##chat-bridge"]["nicks"] else False
     except:
         return False
 
