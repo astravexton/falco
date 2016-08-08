@@ -22,7 +22,7 @@ def weather(irc, source, msgtarget, args):
         irc.msg(msgtarget, "Enter a location")
         return
     try:
-        data = requests.get('http://api.openweathermap.org/data/2.5/weather', params={"q":loc,"units":"metric","appid":"9550e98046c22e2fdf63133946e2cc49"},headers={"user-agent":"Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0"}).json()
+        data = requests.get('http://api.openweathermap.org/data/2.5/weather', params={"q":loc,"units":"metric","appid":utils.api_keys["weather"]},headers={"user-agent":"Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0"}).json()
         city = u"{}, {}".format(data["name"],data["sys"]["country"])
         temp_C = int(data["main"]["temp"])
         temp_F = CtoF(temp_C)
@@ -44,7 +44,7 @@ def weather(irc, source, msgtarget, args):
 def forecast(irc, source, msgtarget, args):
     loc = args or irc.weather[source.nick]
     try:
-        data = requests.get("http://api.openweathermap.org/data/2.5/forecast", params={"q": loc, "type": "like", "units": "metric", "appid":"9550e98046c22e2fdf63133946e2cc49"}, headers={"user-agent":"Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0"}).json()
+        data = requests.get("http://api.openweathermap.org/data/2.5/forecast", params={"q": loc, "type": "like", "units": "metric", "appid":utils.api_keys["weather"]}, headers={"user-agent":"Mozilla/5.0 (X11; Linux x86_64; rv:36.0) Gecko/20100101 Firefox/36.0"}).json()
         city = "{}, {}".format(data["city"]["name"],data["city"]["country"])
         data = data["list"][0]
         temp_C = int(data["main"]["temp"])
