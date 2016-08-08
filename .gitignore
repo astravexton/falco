@@ -4,3 +4,4 @@ log/
 ircize
 *.pyc
 .vscode
+data/
