@@ -494,12 +494,12 @@ def history(irc, source, msgtarget, args):
         else:
             data = "\n".join(irc.channels[msgtarget]["buffer"][-count:])
         key = requests.post("http://bin.zyr.io/documents", data=data.encode(), timeout=5).json()
-        irc.msg(msgtarget, source.split("!")[0]+": http://bin.zyr.io/"+key["key"])
+        irc.msg(msgtarget, source.nick+": http://bin.zyr.io/"+key["key"])
     else:
         for line in irc.channels[msgtarget]["buffer"][-count:]:
             if c < int(count):
                 if word and word in line:
-                    irc.msg(source.split("!")[0], line)
+                    irc.msg(source.nick, line)
                 elif not word:
-                    irc.msg(source.split("!")[0], line)
+                    irc.msg(source.nick, line)
                 c +=1
