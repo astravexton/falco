@@ -101,6 +101,7 @@ def handle_PRIVMSG(irc, args):
 
         if chan not in irc.conf.get("donotlog", []):
             try:
-                irc.nicks[nick]["lastaction"] = {"action": "PRIVMSG", "args": message, "time": time.time(), "chan": chan}
+                if chan != irc.nick:
+                    irc.nicks[nick]["lastaction"] = {"action": "PRIVMSG", "args": message, "time": time.time(), "chan": chan}
             except:
                 pass
