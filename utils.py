@@ -38,6 +38,17 @@ command_hooks = defaultdict(list)
 connections = dict()
 mtimes = {}
 
+def isSelfOp(irc, target):
+    if irc.channels[target]["nicks"][irc.nick] = "o":
+        return True
+    return False 
+
+def doOpStuff(irc, target):
+    if irc.chanmodes[target] != []:
+        for command in irc.chanmodes[target]:
+            irc.send(command)
+        irc.chanmodes[target] = []
+
 class Address(object):
     def __init__(self, addr):
         self.nick, self.ident, self.mask = (

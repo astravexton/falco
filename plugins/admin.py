@@ -80,7 +80,10 @@ def remove(irc, source, msgtarget, args):
                 irc.msg(msgtarget, "remove <channel> <nick> [reason]")
                 return
         irc.chanmodes[chan].append("REMOVE {} {} :{}".format(chan, user, reason))
-        irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
+        if isSelfOp(irc, msgtarget):
+            doOpStuff(irc, msgtarget)
+        else:
+            irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
 
 @add_cmd
 def kick(irc, source, msgtarget, args):
@@ -96,7 +99,10 @@ def kick(irc, source, msgtarget, args):
                 irc.msg(msgtarget, "kick <channel> <nick> [reason] -- default reason is \"Goodbye\"")
                 return
         irc.chanmodes[chan].append("KICK {} {} :{}".format(chan, user, reason))
-        irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
+        if isSelfOp(irc, msgtarget):
+            doOpStuff(irc, msgtarget)
+        else:
+            irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
 
 @add_cmd
 def ban(irc, source, msgtarget, args):
@@ -117,7 +123,10 @@ def ban(irc, source, msgtarget, args):
         irc.chanmodes[chan].append("MODE {} +b {}".format(chan, bmask))
         if "!" not in user or "@" not in user or "*" not in user:
             irc.chanmodes[chan].append("{} {} {} :{}".format(irc.conf["kickmethod"], chan, user, "Goodbye" if not reason else reason))
-        irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
+        if isSelfOp(irc, msgtarget):
+            doOpStuff(irc, msgtarget)
+        else:
+            irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
 
 @add_cmd
 def unban(irc, source, msgtarget, args):
@@ -131,7 +140,10 @@ def unban(irc, source, msgtarget, args):
         except KeyError:
             bmask = user
         irc.chanmodes[chan].append("MODE {} -b {}".format(chan, bmask))
-        irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
+        if isSelfOp(irc, msgtarget):
+            doOpStuff(irc, msgtarget)
+        else:
+            irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
 
 @add_cmd
 def unquiet(irc, source, msgtarget, args):
@@ -147,7 +159,10 @@ def unquiet(irc, source, msgtarget, args):
             bmask = user
 
         irc.chanmodes[chan].append("MODE {} -q {}".format(chan, bmask))
-        irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
+        if isSelfOp(irc, msgtarget):
+            doOpStuff(irc, msgtarget)
+        else:
+            irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
 
 @add_cmd
 def quiet(irc, source, msgtarget, args):
@@ -163,7 +178,10 @@ def quiet(irc, source, msgtarget, args):
             bmask = user
 
         irc.chanmodes[chan].append("MODE {} +q {}".format(chan, bmask))
-        irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
+        if isSelfOp(irc, msgtarget):
+            doOpStuff(irc, msgtarget)
+        else:
+            irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
 
 @add_cmd
 def help(irc, source, msgtarget, args):
@@ -461,7 +479,10 @@ def mode(irc, source, msgtarget, args):
         try:
             chan, cmd = args.split(" ",1)
             irc.chanmodes[chan].append("MODE {} {}".format(chan, cmd))
-            irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
+            if isSelfOp(irc, msgtarget):
+                doOpStuff(irc, msgtarget)
+            else:
+                irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
         except ValueError:
             irc.msg(msgtarget, "mode <channel> <modes>")
 
