@@ -39,7 +39,7 @@ connections = dict()
 mtimes = {}
 
 def isSelfOp(irc, target):
-    if irc.channels[target]["nicks"][irc.nick] = "o":
+    if irc.channels[target]["nicks"][irc.nick] == "o":
         return True
     return False 
 
