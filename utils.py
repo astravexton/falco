@@ -249,12 +249,18 @@ def isAdmin(irc, user):
     return False
 
 def isOp(irc, user):
-    for admin in irc.admins:
+    for admin in irc.admins["hosts"]:
         if fnmatch.fnmatch(user.hostmask, admin):
             return True
     for ops in irc.ops:
         if fnmatch.fnmatch(user.hostmask, ops):
             return True
+    try:
+        account = irc.nicks[user.nick]["account"]
+        if account in irc.ops["accounts"]:
+            return True
+    except:
+        return False
     try:
         return True if user.nick in irc.channels["##chat-bridge"]["nicks"] else False
     except:
