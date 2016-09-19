@@ -1,4 +1,4 @@
-from utils import parse_modes
+from utils import parse_modes, doOpStuff
 
 def handle_MODE(irc, args):
     # falco
@@ -35,9 +35,6 @@ def handle_MODE(irc, args):
 
         if ("o", irc.nick) in parsed_modes["add"]:
             if target in irc.chanmodes:
-                if irc.chanmodes[target] != []:
-                    for command in irc.chanmodes[target]:
-                        irc.send(command)
-                    irc.chanmodes[target] = []
-                    time.sleep(3)
-                    irc.send("MODE {} -o {}".format(target, irc.nick))
+                doOpStuff(irc, target)
+                time.sleep(3)
+                irc.send("MODE {} -o {}".format(target, irc.nick))
