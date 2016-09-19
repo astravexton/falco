@@ -206,7 +206,7 @@ def _shell(irc, source, msgtarget, args):
                 break
         rc = process.poll()
         if lines > 10:
-            key = requests.post("http://bin.zyr.io/documents", data=output.encode()).json()["key"]
+            key = requests.post("https://bin.zyr.io/documents", data=output.encode()).json()["key"]
             irc.msg(msgtarget, "Output too long, see http://bin.zyr.io/"+key)
         elif lines < 10 and not args[0]:
             for line in dump:
