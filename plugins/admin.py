@@ -86,6 +86,13 @@ def remove(irc, source, msgtarget, args):
             irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
 
 @add_cmd
+def kickban(irc, source, msgtarget, args):
+    if isOp(irc, source):
+        bot_commands["ban"](irc, source, msgtarget, args)
+        time.sleep(0.5)
+        bot_commands["kick"](irc, source, msgtarget, args)
+
+@add_cmd
 def kick(irc, source, msgtarget, args):
     """kick <#channel> <nick> [reason] -- kicks <nick> from <#channel> with optional [reason]"""
     if isOp(irc, source):
