@@ -5,7 +5,7 @@ import subprocess, math, os
 def status(irc, source, msgtarget, args):
     PID = os.getpid()
     size = subprocess.getoutput("pmap -X {PID} | tail -n1".format(PID=PID)).strip().split()
-    size = size[1] + size[6]
+    size = int(size[1]) + int(size[6])
     time = subprocess.getoutput("ps -p {PID} h -o time".format(PID=PID)).strip()
     up = irc.started
     rx = int(math.log(irc.rx,2)/10.0)
