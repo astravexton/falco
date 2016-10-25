@@ -1,10 +1,11 @@
 from utils import add_cmd, timesince
-import subprocess, math
+import subprocess, math, os
 
 @add_cmd
 def status(irc, source, msgtarget, args):
-    size = subprocess.getoutput("ps -p $$ h -o size").strip()
-    time = subprocess.getoutput("ps -p $$ h -o time").strip()
+    PID = os.getpid()
+    size = subprocess.getoutput("ps -p {PID} h -o size".format(PID=PID)).strip()
+    time = subprocess.getoutput("ps -p {PID} h -o time".format(PID=PID)).strip()
     up = irc.started
     rx = int(math.log(irc.rx,2)/10.0)
     tx = int(math.log(irc.tx,2)/10.0)
