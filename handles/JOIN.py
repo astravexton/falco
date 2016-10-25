@@ -4,8 +4,11 @@ def handle_JOIN(irc, args):
 
     chan = args.args[0]
     account = None
+    gecos = None
     if len(args.args) > 1:
         account = args.args[1]
+    if len(args.args) > 2:
+        gecos = args.args[2]
     nick = args.sender.nick
     ident = args.sender.ident
     host = args.sender.mask
@@ -34,6 +37,7 @@ def handle_JOIN(irc, args):
         irc.nicks[nick]["ident"] = ident
         irc.nicks[nick]["host"] = host
         irc.nicks[nick]["account"] = account
+        irc.nicks[nick]["gecos"] = gecos
     try:
         if chan not in irc.nicks[nick]["channels"]:
             irc.nicks[nick]["channels"].append(chan)
