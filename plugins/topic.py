@@ -8,7 +8,7 @@ def topic(irc, source, msgtarget, args):
             topic = irc.channels[msgtarget]["topic"]
             t = "{} | {}".format(args, topic)
             while True:
-                if len(t) > 307:
+                if len(t) > irc.topiclen:
                     t = " | ".join(t.split(" | ")[0:-1])
                 else:
                     break
