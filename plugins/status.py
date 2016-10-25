@@ -4,7 +4,8 @@ import subprocess, math, os
 @add_cmd
 def status(irc, source, msgtarget, args):
     PID = os.getpid()
-    size = subprocess.getoutput("pmap -X {PID} | tail -n1 | awk '{print $2+$7}'".format(PID=PID)).strip()
+    size = subprocess.getoutput("pmap -X {PID} | tail -n1".format(PID=PID)).strip().split()
+    size = size[1] + size[6]
     time = subprocess.getoutput("ps -p {PID} h -o time".format(PID=PID)).strip()
     up = irc.started
     rx = int(math.log(irc.rx,2)/10.0)
