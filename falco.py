@@ -12,7 +12,6 @@ import imp
 from ssl import wrap_socket
 from log import log
 import utils
-import breaking
 
 def reload_handlers(init=False):
     handlers = set(glob.glob(os.path.join("handles", "*.py")))
