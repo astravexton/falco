@@ -3,24 +3,7 @@ from utils import connections, isAdmin, isOp, bot_regexes, timesince
 from cgi import escape
 
 def handle_NOTICE(irc, args):
-    # args: .sender, .type, .args
-    #print(args.sender)
-    
-    """
-    # falco falco xe421.at.zyr.io astra test
-    nick = source.split("!")[0]
-    ident = source.split("!")[1].split("@")[0]
-    address = source.split("@")[1]
-    chan, message = args
-    if nick == "NickServ" and irc.identified == False:
-        if "This nickname is registered." in message or "If you do not change your nickname" in message:
-            irc.send("PRIVMSG NickServ :identify {}".format(irc.conf["nickserv_password"]))
-        elif "You are now identified" in message:
-            irc.identified = True
-            for chan in irc.channels:
-                if irc.channels[chan]["autojoin"]:
-                    irc.send("JOIN {}".format(chan))
-    """
+    pass
 
 def handle_PRIVMSG(irc, args):
     nick = args.sender.nick

@@ -20,8 +20,13 @@ def handle_JOIN(irc, args):
             "modes": (),
             "nicks": dict(),
             "buffer": [],
-            "autojoin": False
+            "autojoin": False,
+            "autodeop": True
         }
+
+    elif chan in irc.channels:
+        irc.channels[chan]["nicks"] = dict()
+        irc.channels[chan]["modes"] = ()
 
     if nick not in irc.nicks:
         irc.nicks[nick] = {

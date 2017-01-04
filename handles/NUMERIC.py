@@ -5,6 +5,7 @@ def handle_001(irc, args):
     #irc.nick = args[1].split()[-1].split("!")[0]
     #irc.user = args[1].split()[-1].split("!")[1].split("@")[0]
     #irc.host = args[1].split()[-1].split("@")[1]
+    #self.netname = args.args[1].split(" ")[3]
     for chan in irc.channels:
         try:
             if irc.channels[chan]["autojoin"]:
@@ -14,6 +15,9 @@ def handle_001(irc, args):
             irc.channels[chan]["autojoin"] = False
     for chan in irc.autojoin:
         irc.send("JOIN {}".format(chan))
+
+def handle_002(irc, args):
+    irc.nethost = args.args[1].split(" ")[3][:-1]
 
 def handle_005(irc, args):
 
@@ -26,16 +30,19 @@ def handle_005(irc, args):
             chanmodes["*D"] = arg.split("=")[1].split(",")
 
         if arg.startswith("NICKLEN"):
-            irc.nicklen = arg.split("=")[1]
+            irc.nicklen = int(arg.split("=")[1])
 
         if arg.startswith("TOPICLEN"):
-            irc.topiclen = arg.split("=")[1]
+            irc.topiclen = int(arg.split("=")[1])
 
         if arg.startswith("PREFIX"):
             prefix = arg.split("=")[1]
             prefix = re.search(r'\((.*)\)(.*)', prefix)
             irc.prefixmodes = dict(zip(prefix.group(1), prefix.group(2)))
             irc.modesprefix = dict(zip(prefix.group(2), prefix.group(1)))
+
+        if arg.startswith("NETWORK"):
+            irc.network = arg.split("=")[1]
 
 def handle_251(irc, args):
     irc.send("MODE {} {}".format(irc.nick, irc.setmodes))
@@ -159,6 +166,9 @@ def handle_366(irc, args):
     # ['nathan', '#test', 'End of /NAMES list.']
     chan = args.args[1]
     irc.send("MODE {}".format(chan))
+
+def handle_396(irc, args):
+    irc.myhost = args.args[1]
 
 def handle_433(irc, args):
 

@@ -13,3 +13,11 @@ def handle_KICK(irc, args):
             "time": time.time(),
             "chan": chan
         }
+
+    try:
+        irc.nicks[nick]["channels"].remove(chan)
+        del irc.channels[chan]["nicks"][nick]
+    except KeyError:
+        pass
+    except ValueError:
+        pass

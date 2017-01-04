@@ -9,6 +9,8 @@ def handle_QUIT(irc, args):
     host = args.sender.hostmask
     msg = args.args[0] or ""
 
+    for chan in irc.nicks[nick]["channels"]:
+        del irc.channels[chan]["nicks"][nick]
+
     irc.nicks[nick]["channels"] = []
     irc.nicks[nick]["lastaction"] = {"action": "QUIT", "args": msg, "time": time.time(), "chan": None}
-

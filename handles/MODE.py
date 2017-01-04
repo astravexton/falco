@@ -17,11 +17,9 @@ def handle_MODE(irc, args):
     elif target[0] == "#":
         for mode in parsed_modes["add"]:
             if mode[0] not in ["b", "q", "e", "I", "o", "h", "v"]:
-                pass
-                #irc.channels[target]["modes"].append(mode)
+                irc.channels[target]["modes"].append(mode)
             else:
-                if mode[0] in ["o", "v", "h"]:
-                    #if irc.channels"][target]["nicks"][mode[1]]
+                if mode[0] in irc.prefixmodes.keys():
                     irc.channels[target]["nicks"][mode[1]] = mode[0]
 
         for mode in parsed_modes["rem"]:
@@ -36,5 +34,6 @@ def handle_MODE(irc, args):
         if ("o", irc.nick) in parsed_modes["add"]:
             if target in irc.chanmodes:
                 doOpStuff(irc, target)
-                time.sleep(3)
-                irc.send("MODE {} -o {}".format(target, irc.nick))
+                if irc.channels[target]["autodeop"]:
+                    time.sleep(3)
+                    irc.send("MODE {} -o {}".format(target, irc.nick))
