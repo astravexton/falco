@@ -70,8 +70,6 @@ def connectall():
     for server in utils.connections.values():
         server.start()
 
-log.info("Starting falco")
-
 mtimes = dict()
 
 class IRC(threading.Thread):
@@ -153,14 +151,15 @@ class IRC(threading.Thread):
 
                     line, self.ibuffer = self.ibuffer.split("\r\n", 1)
                     line = line.strip()
-                    
+
+                    parsed = utils.parseArgs(line)
                     
                     try:
-                        func = globals()["handle_"+utils.parseArgs(line).type]
+                        func = globals()["handle_"+parsed.type]
                     except KeyError:
-                        log.warn("No handler for %s found", utils.parseArgs(line).type)
+                        log.warn("No handler for %s found", parsed.type)
                     else:
-                        func(self, utils.parseArgs(line))
+                        func(self, parsed)
 
                     log.debug("(%s) -> %s", self.netname, line)
 
@@ -253,6 +252,8 @@ class IRC(threading.Thread):
         self.run()
 
 if __name__ == "__main__":
+
+    log.info("Starting falco")
 
     try:
         config_file = sys.argv[1]
