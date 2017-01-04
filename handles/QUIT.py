@@ -10,7 +10,10 @@ def handle_QUIT(irc, args):
     msg = args.args[0] or ""
 
     for chan in irc.nicks[nick]["channels"]:
-        del irc.channels[chan]["nicks"][nick]
+        try:
+            del irc.channels[chan]["nicks"][nick]
+        except KeyError:
+            pass
 
     irc.nicks[nick]["channels"] = []
     irc.nicks[nick]["lastaction"] = {"action": "QUIT", "args": msg, "time": time.time(), "chan": None}
