@@ -17,7 +17,8 @@ def handle_MODE(irc, args):
     elif target[0] == "#":
         for mode in parsed_modes["add"]:
             if mode[0] not in ["b", "q", "e", "I", "o", "h", "v"]:
-                irc.channels[target]["modes"].append(mode)
+                # irc.channels[target]["modes"].append(mode)
+                pass
             else:
                 if mode[0] in irc.prefixmodes.keys():
                     irc.channels[target]["nicks"][mode[1]] = mode[0]
