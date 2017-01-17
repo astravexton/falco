@@ -25,7 +25,7 @@ def handle_JOIN(irc, args):
         }
 
     elif chan in irc.channels:
-        irc.channels[chan]["nicks"] = dict()
+        # irc.channels[chan]["nicks"] = dict()
         irc.channels[chan]["modes"] = ()
 
     if nick not in irc.nicks:
