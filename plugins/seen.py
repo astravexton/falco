@@ -1,14 +1,5 @@
 from utils import add_cmd, timesince
 
-#@add_cmd
-#def seen(irc, source, msgtarget, args):
-#    nick = args.split()[0]
-#    try:
-#        irc.msg(msgtarget, "{} was last seen saying \"{}\" about {} ago".format(
-#                args, irc.nicks[nick]["lastmsg"].replace("\x01", ""), timesince(irc.nicks[nick]["lastspoke"])))
-#    except KeyError as e:
-#        irc.msg(msgtarget, "I haven't seen {} around.".format(nick))
-
 @add_cmd
 def seen(irc, source, msgtarget, args):
     nick = args.split()[0]
@@ -18,7 +9,6 @@ def seen(irc, source, msgtarget, args):
                 n = irc.nicks[nicks]["lastaction"]
                 break
         try:
-            #s = irc.nicks[nick]["lastaction"]
             s = n
             n = irc.nicks[nick]
             if s["chan"] == nick: return
@@ -36,8 +26,10 @@ def seen(irc, source, msgtarget, args):
                     nick, n["ident"], n["host"], timesince(s["time"]), s["args"]))
             elif s["action"] == "KICK":
                 irc.msg(msgtarget, "{} ({}@{}) was last seen kicked from {} about {} ago ({})".format(
-                    nick, n["ident"], n["host"], s["chan"], timesince(s["time"]), s["args"]
-                ))
+                    nick, n["ident"], n["host"], s["chan"], timesince(s["time"]), s["args"]))
+            elif s["action"] == "NICK":
+                irc.msg(msgtarget, "{} ({}@{}) was last seen changing nick to {} about {} ago".format(
+                    nick, n["ident"], n["host"], s["args"], timesince(s["time"])))
 
         except:
             if nick == irc.nick:
