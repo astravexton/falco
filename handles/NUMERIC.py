@@ -104,7 +104,7 @@ def handle_352(irc, args):
         userObj.nickname = nick
     irc.users[nick] = userObj
     chanObj.add_member(nick, userObj)
-    userObj.channels.append(chan)
+    userObj.channels[chan] = chanObj
     # if nick not in irc.nicks:
     #     irc.nicks[nick] = {
     #         "nick": nick,
@@ -145,7 +145,7 @@ def handle_354(irc, args):
             userObj.account -  account
         irc.users[nick].append(userObj)
         chanObj.add_member(nick, userObj)
-        userObj.channels.append(chan)
+        userObj.channels[chan] = chanObj
         # if nick not in irc.nicks:
         #     irc.nicks[nick] = {
         #         "nick": nick,

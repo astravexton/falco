@@ -9,5 +9,7 @@ def handle_PART(irc, args):
     chanObj = irc.get_channel(chan)
     userObj = irc.get_user(nick)
     chanObj.remove_member(userObj)
+    userObj.remove_channel(chan)
     if chan not in irc.conf.get("donotlog", []):
-        userObj.lastaction = {"action": "PART", "args": args.args[1], "time": time.time(), "chan": chan}
+        reason = args.args[1] if len(args.args) > 1 else ""
+        userObj.lastaction = {"action": "PART", "args": reason, "time": time.time(), "chan": chan}

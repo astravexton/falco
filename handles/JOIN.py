@@ -20,7 +20,7 @@ def handle_JOIN(irc, args):
         userObj.user = ident
         userObj.gecos = gecos
         userObj.nickname = nick
-        userObj.channels.append(chan)
+        userObj.channels[chan] = chanObj
         chanObj.add_member(nick, userObj)
         irc.users[nick] = userObj
         if chan not in irc.conf.get("donotlog", []):
