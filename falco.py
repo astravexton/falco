@@ -26,7 +26,7 @@ def reload_handlers(init=False):
                 if init:
                     sys.exit(1)
                 continue
-            log.info("(Re)Loaded %s", filename)
+            log.debug("(Re)Loaded %s", filename)
 
 def reload_plugins(init=False):
     plugins_folder = [os.path.join(os.getcwd(), 'plugins')]
@@ -37,7 +37,7 @@ def reload_plugins(init=False):
         if mtime != mtimes.get(_plugin):
             mtimes[_plugin] = mtime
             try:
-                moduleinfo = imp.find_module(plugin.split("/")[1].split(".")[0], plugins_folder)
+                moduleinfo = imp.find_module(plugin.split(os.path.sep)[1].split(".")[0], plugins_folder)
                 pl = imp.load_source(plugin, moduleinfo[1])
             except ImportError as e:
                 if str(e).startswith('No module named'):
@@ -54,7 +54,7 @@ def reload_plugins(init=False):
                     for server in utils.connections.values():
                         pl.main(server)
                         log.debug('%r Calling main() function of plugin %r', server.netname, pl)
-            log.info("(Re)Loaded %s", _plugin)
+            log.debug("(Re)Loaded %s", plugin)
 
 def reload_config():
     for irc in utils.connections.values():
@@ -76,8 +76,7 @@ class IRC(threading.Thread):
 
     def __init__(self, conf, config_file):
         threading.Thread.__init__(self)
-        #self.daemon = True
-        self.data_dir = "data/"
+        self.data_dir = "data" + os.path.sep
         os.makedirs(self.data_dir, exist_ok=True)
         self.conf = conf
         self.conf_mtime = os.stat(config_file).st_mtime
@@ -105,9 +104,13 @@ class IRC(threading.Thread):
         self.identified = False
         self.cap = []
         self.capdone = False
+
+        self.users = {}
+        self.chans = {}
+
         try:
-            self.nicks = json.load(open("data/{}-nicks.json".format(self.netname)))
-            self.channels = json.load(open("data/{}-channels.json".format(self.netname)))
+            self.nicks = json.load(open(self.data_dir + "{}-nicks.json".format(self.netname)))
+            self.channels = json.load(open(self.data_dir + "{}-channels.json".format(self.netname)))
         except FileNotFoundError: 
             self.channels = {}
             self.nicks = {}
@@ -135,6 +138,17 @@ class IRC(threading.Thread):
         self.autokick = self.conf["autokick"]
         self.ops = self.conf.get("ops", [])
 
+    def get_channel(self, channelname):
+        if channelname not in self.chans.keys():
+            self.chans[channelname] = utils.Channel(self, channelname)
+        return self.chans[channelname]
+
+    def get_user(self, nickname):
+        if nickname in self.users.keys():
+            return self.users[nickname]
+        else:
+            return utils.User("", "", "", "")
+
     def run(self):
  
         self.connect()
@@ -157,7 +171,8 @@ class IRC(threading.Thread):
                     try:
                         func = globals()["handle_"+parsed.type]
                     except KeyError:
-                        log.warn("No handler for %s found", parsed.type)
+                        # log.warn("No handler for %s found", parsed.type)
+                        pass
                     else:
                         func(self, parsed)
 
@@ -206,7 +221,7 @@ class IRC(threading.Thread):
         try:
             self.socket.send(data)
         except AttributeError:
-            log.debug("(%s) Dropping message %r; network isn't connected!", self.netname, stripped_data)
+            log.warn("(%s) Dropping message %r; network isn't connected!", self.netname, stripped_data)
 
     def schedulePing(self):
         with open(self.data_dir+self.netname+"-nicks.json", "w") as f:
@@ -222,8 +237,10 @@ class IRC(threading.Thread):
         self.pingTimer.start()
 
     def connect(self):
+        self.cap = []
+        self.capdone = False
         self.started = time.time()
-        log.debug("(%s) Attempting to connect to %s/%s as %s",
+        log.info("(%s) Attempting to connect to %s/%s as %s",
                   self.netname, self.server, self.port, self.nick)
         self.socket = socket.create_connection((self.server, self.port))
         if self.ssl:
@@ -253,7 +270,7 @@ class IRC(threading.Thread):
 
 if __name__ == "__main__":
 
-    log.info("Starting falco")
+    log.info("Starting falco (%s)", utils.bot_version())
 
     try:
         config_file = sys.argv[1]

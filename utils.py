@@ -6,6 +6,66 @@ global bot_commands, bot_regexes, connections
 
 api_keys = []
 
+def bot_version():
+    pipe = os.popen("git log --oneline")
+    output = pipe.read().split("\n")
+    pipe.close()
+    count = len(output)
+    ver = output[0].split(" ")[0]
+    return "%s-%d" % (ver, count)
+
+class User:
+    def __init__(self, server, nickname, user, host, gecos=None, account=None):
+        self.server = server
+        self.nickname = nickname
+        self.user = user
+        self.host = host
+        self.gecos = gecos
+        self.account = account
+        self.channels = []
+        self.lastaction = {"action": "", "args": None, "time": 0, "chan": None}
+
+    @property
+    def prefix(self):
+        return "%s!%s@%s" % (self.nickname, self.user, self.host)
+
+class Channel:
+    def __init__(self, server, name):
+        self.server = server
+        self.name = name
+        self.members = {}
+        self._topic = ""
+        self.oldtopics = []
+        self.key = None
+        self.chanmodes = []
+        self.usermodes = {}
+        self.bans = []
+        self.quiets = []
+        self.invexs = []
+        self.excepts = []
+        self.buffer = []
+
+    def add_member(self, nickname, user):
+        self.members[nickname] = user
+
+    @property
+    def topic(self):
+        return self._topic
+
+    @topic.setter
+    def topic(self, value):
+        self._topic = value
+
+    def append_old_topic(self, value):
+        self.oldtopics.prepend(value)
+        if len(self.oldtopics) >= 25:
+            self.oldtopics.pop(-1)
+
+    def remove_member(self, client):
+        if client.nickname in self.members.keys():
+            del self.members[client.nickname]
+            client.channels.remove(self.name)
+
 def lookup(id):
     params = {
         "part": "id,snippet,contentDetails,statistics,status,liveStreamingDetails",
@@ -174,6 +234,7 @@ def add_hook(func, command):
     """Add a hook <func> for command <command>."""
     command = command.upper()
     command_hooks[command].append(func)
+    log.debug("Added hook %s on %s" % (func.__name__, command))
 
 chanmodes = {'op': 'o', 'voice': 'v', 'ban': 'b', 'key': 'k', 'limit':
              'l', 'moderated': 'm', 'noextmsg': 'n', 'noknock': 'p',

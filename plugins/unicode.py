@@ -16,7 +16,7 @@ def unicode(irc, source, msgtarget, args):
                 if pat.search(y) is not None]
     if matches:
         output = []
-        for match in matches[0:70]:
+        for match in matches[:125]:
             output.append(chr(match[1]))
         irc.msg(msgtarget, " ".join(output))
     else:

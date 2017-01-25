@@ -4,20 +4,10 @@ def handle_KICK(irc, args):
     except AttributeError:
         knick = args.sender[1:]
     chan, nick, reason = args.args
-    if chan in irc.nicks[nick]["channels"]:
-        irc.nicks[nick]["channels"].remove(chan)
-    if chan not in irc.conf.get("donotlog", []):
-        irc.nicks[nick]["lastaction"] = {
-            "action": "KICK",
-            "args": "({}) {}".format(knick, reason),
-            "time": time.time(),
-            "chan": chan
-        }
 
-    try:
-        irc.nicks[nick]["channels"].remove(chan)
-        del irc.channels[chan]["nicks"][nick]
-    except KeyError:
-        pass
-    except ValueError:
-        pass
+    chanObj = irc.get_channel(chan)
+    userObj = irc.get_user(nick)
+    userObj.channels.remove(chan)
+    del chanObj.members[nick]
+    if chan not in irc.conf.get("donotlog", []):
+        userObj.lastaction = {"action": "KICK", "args": "({}) {}".format(knick, reason), "time": time.time(), "chan": chan}

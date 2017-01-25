@@ -1,10 +1,8 @@
 from utils import *
-from html.parser import HTMLParser
-import shlex, tempfile, random, math, requests, json
-import os, subprocess, socket, sys, threading, re
-import multiprocessing, select, sqlite3, code, time
-import wikipedia, fnmatch
-from bs4 import BeautifulSoup
+import shlex, math, requests
+import os, subprocess, socket, sys, re
+import time
+import fnmatch
 
 @add_cmd
 def stalk(irc, source, msgtarget, args):
@@ -251,9 +249,7 @@ def getinfo(irc, source, msgtarget, args):
         elif line.strip().startswith("VmRSS:"):
             memory = line.strip().split(":")[1].split(" ")[-2]
     pipe.close()
-    pipe = os.popen("git log --oneline | head -n1")
-    ver = pipe.read().split(" ")[0]
-    pipe.close()
+    ver = bot_version()
     memory = round(int(memory)/1000)
     rx = int(math.log(irc.rx,2)/10.0)
     tx = int(math.log(irc.tx,2)/10.0)
@@ -343,28 +339,6 @@ def regex(irc, source, msgtarget, args):
         irc.msg(msgtarget, "and {} more lines".format(total))
     irc.channels[msgtarget]["buffer"].reverse()
 
-def zeroclick(irc, source, msgtarget, args):
-    params = {"q":args[0]}
-    url = "http://duckduckgo.com/lite/?"
-    #try:
-    data = requests.get(url, params=params).content.decode()
-    search = re.findall("""\t<td>.\t\s+(.*?).<\/td>""",data,re.M|re.DOTALL)
-    if search:
-        answer = HTMLParser().unescape(search[-1].replace("<br>"," ").replace("<code>"," ").replace("</code>"," "))
-        answer = re.sub("<[^<]+?>"," ",answer)
-        out = re.sub("\s+"," ",answer.strip())
-        if out:
-            #if len(out.split(" More at")[0].split("}")[-1].strip()) < 400:
-            irc.msg(msgtarget, out.split(" More at")[0].split("}")[-1].strip())
-            #else:
-            #    irc.msg(source.split("!")[0], out.split(" More at")[0].split("}")[-1].strip())
-        else: 
-            irc.msg(msgtarget, "No results")
-    else:
-        irc.msg(msgtarget, "No results found.")
-
-add_regex(zeroclick, "^>\?(.*)")
-
 def metrictime(irc, source, msgtarget, args):
     "metrictime <current/<hours(0-23)>:<minutes(0-59)>:<seconds(0-59)>> -- convert 24-hour time into metric time"
     args = args[0] if args[0] != "now" else time.strftime("%H:%M:%S")
@@ -399,74 +373,6 @@ def metrictime(irc, source, msgtarget, args):
 
 add_regex(metrictime, "^\.metric (.*)")
 
-def diplomaticshark(irc, source, msgtarget, args):
-    r = requests.get("http://diplomaticshark.com/").content.decode()
-    m = re.search("<center><font face=\"Fixedsys, System, Charcoal CY, Chicago\" size=\"7\">(.*?)<\/font>", r)
-    if m:
-        irc.hasink = False
-        irc.msg(msgtarget, m.group(1), reply="PRIVMSG")
-        irc.hasink = True
-
-add_cmd(diplomaticshark, "SHARK")
-
-@add_cmd
-def ddg(irc, source, msgtarget, args):
-    try:
-        irc.msg(msgtarget, search(args.replace(" "+args.split(" ")[-1], ""), int(args.split(" ")[-1])))
-    except:
-        irc.msg(msgtarget, search(args))
-
-@add_cmd
-def randwiki(irc, source, msgtarget, args):
-    rand = wikipedia.random(pages=1)
-    url = wikipedia.page(rand).url
-    irc.msg(msgtarget, "Random Article: {} - \x1d{}\x1d".format(rand, url))
-    irc.msg(msgtarget, wikipedia.summary(rand, sentences=2, chars=250, auto_suggest=True))
-
-@add_cmd
-def wiki(irc, source, msgtarget, args):
-    try:
-        url = wikipedia.page(args).url
-        page = wikipedia.summary(wikipedia.search(args)[0], sentences=2, auto_suggest=True)
-        irc.msg(msgtarget, page)
-        irc.msg(msgtarget, "More at \x1d"+url)
-    except wikipedia.exceptions.DisambiguationError as e:
-        bot_commands["wiki"](irc, source, msgtarget, e.options[0])
-    except wikipedia.exceptions.PageError:
-        irc.msg(msgtarget, "No page could be found")
-
-def search(q, n=0):
-    r = requests.get("http://duckduckgo.com/lite",
-        params={"q":q.encode('utf8', 'ignore')},
-        headers={"User-Agent": "falco IRC bot nathan@irc.subluminal.net/#programming"}
-    )
-    if r.ok:
-        page = BeautifulSoup(r.content.decode())
-        results = page.find_all("a")[1:]
-        for result in results:
-            if "nofollow" in result.decode():
-                res = result.decode()
-                break
-        if res:
-            m = re.search("""href="(.*)" rel="nofollow">(.*)<\/a>""", res)
-            if m:
-                return "{} - \x1d{}\x1d".format(HTMLParser().unescape(re.sub("<[^<]+?>", "", m.group(2))), shorten(m.group(1)))
-        else:
-            return "No results found"
-    else:
-        return r.statuc_code
-
-def filter(irc, source, msgtarget, args):
-    if isAdmin(irc, source):
-        if args.lower().strip() not in irc.filter:
-            irc.msg(msgtarget, "{} added to filter".format(args))
-            irc.filter.append(args.lower().strip())
-        else:
-            irc.filter.remove(args.lower().strip())
-            irc.msg(msgtarget, "{} removed from filter".format(args))
-
-add_cmd(filter, "filter")
-
 @add_cmd
 def mode(irc, source, msgtarget, args):
     if isOp(irc, source):
@@ -479,42 +385,3 @@ def mode(irc, source, msgtarget, args):
                 irc.send("PRIVMSG ChanServ :OP {} {}".format(chan, irc.nick))
         except ValueError:
             irc.msg(msgtarget, "mode <channel> <modes>")
-
-@add_cmd
-def history(irc, source, msgtarget, args):
-    c = 0
-    word = None
-    if args.count(" ") == 1:
-        try:
-            word, count = args.split(" ",1)
-        except ValueError:
-            try:
-                count = int(args)
-            except ValueError:
-                count = 10
-    else:
-        try:
-            count = int(args)
-        except ValueError:
-            word = args
-            count = 10
-    count = int(count)
-    data = []
-    if count > 20:
-        if word:
-            for line in irc.channels[msgtarget]["buffer"][-count:]:
-                if re.search(word, line):
-                    data.append(line)
-            data = "\n".join(data)
-        else:
-            data = "\n".join(irc.channels[msgtarget]["buffer"][-count:])
-        key = requests.post("http://bin.zyr.io/documents", data=data.encode(), timeout=5).json()
-        irc.msg(msgtarget, source.nick+": http://bin.zyr.io/"+key["key"])
-    else:
-        for line in irc.channels[msgtarget]["buffer"][-count:]:
-            if c < int(count):
-                if word and word in line:
-                    irc.msg(source.nick, line)
-                elif not word:
-                    irc.msg(source.nick, line)
-                c +=1

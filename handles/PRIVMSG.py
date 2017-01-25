@@ -30,6 +30,7 @@ def handle_PRIVMSG(irc, args):
         ignored = False
 
     if ignored == False:
+        chanObj = irc.get_channel(chan)
 
         if "\x01ACTION " in message:
             _format = "* {nick} {message}".format(nick=nick, message=message.replace("\x01ACTION ","").replace("\x01", ""))
@@ -37,9 +38,9 @@ def handle_PRIVMSG(irc, args):
             _format = "<{nick}> {message}".format(nick=nick, message=message)
 
         try:
-            if len(irc.channels[chan]["buffer"]) > irc.buffermaxlen:
-                irc.channels[chan]["buffer"].pop(0)
-            irc.channels[chan]["buffer"].append(_format)
+            if len(chanObj.buffer) > irc.buffermaxlen:
+                chanObj.buffer.pop(0)
+            chanObj.buffer.append((time.time(), _format))
         except:
             # buffer doesn't exist? usually a pm
             pass
@@ -49,7 +50,7 @@ def handle_PRIVMSG(irc, args):
             regex, func = cmd
             m = regex.search(message)
             if m:
-                #log.info("(%s) Calling regex for %s", irc.netname, func.__name__)
+                log.debug("(%s) Calling regex for %s", irc.netname, func.__name__)
                 c = threading.Thread(target=func, args=(irc, args.sender, chan, m.groups()))
                 c.daemon = True
                 c.start()
@@ -57,7 +58,6 @@ def handle_PRIVMSG(irc, args):
         if args.args[0] == irc.nick:
             # in a pm, should reply to nick not self
             args.args[0] = nick
-            regex = u"(?:{}?)(.*?)(?:$|\s+)(.*)".format(irc.prefix)
         else:
             regex = u"(?:{})(.*?)(?:$|\s+)(.*)".format(irc.prefix)
         m = re.match(regex, message)
@@ -75,7 +75,7 @@ def handle_PRIVMSG(irc, args):
 
             else:
                 try:
-                    log.info("(%s) Calling command %r", irc.netname, command)
+                    log.debug("(%s) Calling command %r", irc.netname, command)
                     threading.Thread(target=func, args=(irc, args.sender, chan, cmdargs)).start()
 
                 except Exception as e:
@@ -83,8 +83,6 @@ def handle_PRIVMSG(irc, args):
                     irc.msg(chan, "Uncaught exception: {}".format(str(e)))
 
         if chan not in irc.conf.get("donotlog", []):
-            try:
-                if chan != irc.nick:
-                    irc.nicks[nick]["lastaction"] = {"action": "PRIVMSG", "args": message, "time": time.time(), "chan": chan}
-            except:
-                pass
+            if chan != irc.nick: # dont log self
+                userObj = irc.get_user(nick)
+                userObj.lastaction = {"action": "PRIVMSG", "args": message, "time": time.time(), "chan": chan}
