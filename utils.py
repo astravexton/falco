@@ -22,12 +22,15 @@ class User:
         self.host = host
         self.gecos = gecos
         self.account = account
-        self.channels = []
+        self.channels = {}
         self.lastaction = {"action": "", "args": None, "time": 0, "chan": None}
 
     @property
     def prefix(self):
         return "%s!%s@%s" % (self.nickname, self.user, self.host)
+
+    def remove_channel(self, channel):
+        del self.channels[channel]
 
 class Channel:
     def __init__(self, server, name):
@@ -64,7 +67,6 @@ class Channel:
     def remove_member(self, client):
         if client.nickname in self.members.keys():
             del self.members[client.nickname]
-            client.channels.remove(self.name)
 
 def lookup(id):
     params = {
