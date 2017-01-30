@@ -4,7 +4,7 @@ import sys
 import re
 
 @add_cmd
-def unicode(irc, source, msgtarget, args):
+def unicode(irc, target, args, cmdargs):
     unicode_names = []
     for ix in range(sys.maxunicode+1):
         try:
@@ -18,6 +18,6 @@ def unicode(irc, source, msgtarget, args):
         output = []
         for match in matches[:125]:
             output.append(chr(match[1]))
-        irc.msg(msgtarget, " ".join(output))
+        irc.msg(target, " ".join(output))
     else:
-        irc.msg(msgtarget, "No unicode found.")
+        irc.msg(target, "No unicode found.")

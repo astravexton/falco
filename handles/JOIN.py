@@ -13,9 +13,8 @@ def handle_JOIN(irc, args):
     host = args.sender.mask
 
     chanObj = irc.get_channel(chan)
-    if nick not in chanObj.members.keys() and nick != irc.nick:
+    if nick not in chanObj.members.keys():
         userObj = irc.get_user(nick)
-        userObj.server = irc
         userObj.host = host
         userObj.user = ident
         userObj.gecos = gecos

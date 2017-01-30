@@ -1,5 +1,7 @@
 import random, time
 from utils import parse_modes, getNewNick, chanmodes, check_mask, User
+from log import log
+import re
 
 def handle_001(irc, args):
     #irc.nick = args[1].split()[-1].split("!")[0]
@@ -59,6 +61,7 @@ def handle_324(irc, args):
     # ['falco', '#test', '+ntlk', '2', 'test']
     chan = args.args[1]
     modes = args.args[2:]
+    print(args.args)
     chanObj = irc.get_channel(chan)
     chanObj.modes = parse_modes(irc, modes)["add"]
     # irc.channels[chan]["modes"] = parse_modes(irc, modes)["add"]
@@ -97,7 +100,6 @@ def handle_352(irc, args):
     chanObj = irc.get_channel(chan)
     userObj = irc.get_user(nick)
     if userObj.host == "":
-        userObj.server = irc
         userObj.host = host
         userObj.user = ident
         userObj.gecos = gecos
@@ -137,7 +139,6 @@ def handle_354(irc, args):
         chanObj = irc.get_channel(chan)
         userObj = irc.get_user(nick)
         if userObj.host == "":
-            userObj.server = irc
             userObj.host = host
             userObj.user = user
             userObj.gecos = gecos

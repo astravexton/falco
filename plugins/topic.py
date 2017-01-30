@@ -1,21 +1,24 @@
 from utils import *
 
 @add_cmd
-def topic(irc, source, msgtarget, args):
-    "topic <topic> -- appends <topic> to the current channel topic"
-    if isAdmin(irc, source):
-        if args:
-            topic = irc.channels[msgtarget]["topic"] if "topic" in irc.channels[msgtarget].keys() else ""
-            t = "{} | {}".format(args, topic) if topic else args
-            while True:
-                if len(t) > irc.topiclen:
-                    t = " | ".join(t.split(" | ")[0:-1])
-                else:
-                    break
-            if irc.channels[msgtarget]["nicks"][irc.nick] == "o":
-                irc.send("TOPIC {} :{}".format(msgtarget, t))
-            else:
-                irc.chanmodes[msgtarget].append("TOPIC {} :{}".format(msgtarget, t))
-                irc.send("PRIVMSG ChanServ :OP {}".format(msgtarget))
-        else:
-            irc.msg(msgtarget, "topic <topic> -- appends <topic> to the current channel topic")
+def topic(irc, target, args, cmdargs):
+    "topic <topic>"
+    if not isAdmin(irc, args.sender):
+        return
+
+    if not cmdargs:
+        irc.msg(target, "topic <topic>")
+        return
+
+    topic = irc.get_channel(target).topic
+    t = "{} | {}".format(cmdargs, topic) if topic else cmdargs
+    while True:
+        if not len(t) > irc.topiclen:
+            break
+        t = " | ".join(t.split(" | ")[0:-1])
+
+    if irc.channels[target]["nicks"][irc.nick] == "o":
+        irc.send("TOPIC {} :{}".format(target, t))
+    else:
+        irc.chanmodes[target].append("TOPIC {} :{}".format(target, t))
+        irc.send("PRIVMSG ChanServ :OP {}".format(target))

@@ -2,7 +2,9 @@ import fnmatch, time, re, glob, os, imp, datetime, requests
 from collections import defaultdict
 from log import log
 
-global bot_commands, bot_regexes, connections
+global bot_commands, bot_regexes, connections, user_hooks, command_hooks
+
+user_hooks = {}
 
 api_keys = []
 
@@ -16,7 +18,6 @@ def bot_version():
 
 class User:
     def __init__(self, server, nickname, user, host, gecos=None, account=None):
-        self.server = server
         self.nickname = nickname
         self.user = user
         self.host = host
@@ -24,6 +25,7 @@ class User:
         self.account = account
         self.channels = {}
         self.lastaction = {"action": "", "args": None, "time": 0, "chan": None}
+        self.ignored = False
 
     @property
     def prefix(self):
@@ -60,7 +62,7 @@ class Channel:
         self._topic = value
 
     def append_old_topic(self, value):
-        self.oldtopics.prepend(value)
+        self.oldtopics.insert(0, value)
         if len(self.oldtopics) >= 25:
             self.oldtopics.pop(-1)
 
@@ -134,7 +136,7 @@ class parseArgs(object):
                 real_args.append(arg)
                 break
         if "@" not in real_args[0]:
-            self.sender = real_args[0]
+            self.sender = Address("*!*@"+real_args[0].lstrip(":"))
         else:
             self.sender = Address(real_args[0])
         self.type = real_args[1]
@@ -223,20 +225,25 @@ def add_cmd(func, name=None):
 
     name = name
     bot_commands[name] = func
-    #print("Added command {} as {}".format(func, name))
+    log.debug("Added command %r for %r", name, func.__name__)
 
 def add_regex(func, regex=None):
     if regex == None:
-        log.warn("Unable to add regex for %s", func.__name__)
+        log.warn("Unable to add regex for %r", func.__name__)
     else:
         bot_regexes[re.compile(regex)] = func
-        log.debug("Added regex %s for %s", regex, func.__name__)
+        log.debug("Added regex %r for %r", regex, func.__name__)
 
 def add_hook(func, command):
     """Add a hook <func> for command <command>."""
-    command = command.upper()
-    command_hooks[command].append(func)
-    log.debug("Added hook %s on %s" % (func.__name__, command))
+    if type(command) == list:
+        for c in command:
+            command = c.upper()
+            command_hooks[command].append(func)
+            log.debug("Added hook %r on %r" % (func.__name__, command))
+    else:
+        command_hooks[command].append(func)
+        log.debug("Added hook %r on %r" % (func.__name__, command))
 
 chanmodes = {'op': 'o', 'voice': 'v', 'ban': 'b', 'key': 'k', 'limit':
              'l', 'moderated': 'm', 'noextmsg': 'n', 'noknock': 'p',
@@ -303,8 +310,8 @@ def isAdmin(irc, user):
         if fnmatch.fnmatch(user.hostmask, admin):
             return True
     try:
-        account = irc.nicks[user.nick]["account"]
-        if account in irc.admins["accounts"]:
+        userObj = irc.get_user(user.nick)
+        if userObj.account in irc.admins["accounts"]:
             return True
     except:
         return False
@@ -315,19 +322,14 @@ def isOp(irc, user):
     for admin in irc.admins["hosts"]:
         if fnmatch.fnmatch(user.hostmask, admin):
             return True
-    for ops in irc.ops:
-        if fnmatch.fnmatch(user.hostmask, ops):
-            return True
     try:
-        account = irc.nicks[user.nick]["account"]
-        if account in irc.ops["accounts"]:
+        userObj = irc.get_user(user.nick)
+        if userObj.account in irc.ops["accounts"]:
             return True
     except:
         return False
-    try:
-        return True if user.nick in irc.channels["##chat-bridge"]["nicks"] else False
-    except:
-        return False
+
+    return False
 
 def getNewNick(irc, nick=None, new=True):
     if not nick:

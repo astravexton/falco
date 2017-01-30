@@ -37,26 +37,27 @@ class Repl(code.InteractiveConsole):
     def showsyntaxerror(self, filename):
         self.showtraceback()
 
-def repl(irc, source, msgtarget, args):
-    if utils.isAdmin(irc, source):
-        irc.repls.run(msgtarget, args)
+def repl(irc, target, args, cmdargs):
+    if utils.isAdmin(irc, args.sender):
+        irc.repls.run(target, cmdargs)
 
 utils.add_cmd(repl, ">>")
 
-def multirepl(irc, source, msgtarget, args):
-    args = args[0]
-    if utils.isAdmin(irc, source) and irc.multirepl == True and args != '"""':
-        irc.repl+=args+"\n"
+def multirepl(irc, target, args, cmdargs):
+    if utils.isAdmin(irc, source) and irc.multirepl == True and cmdargs != '"""':
+        irc.repl+=cmdargs+"\n"
 
 utils.add_regex(multirepl, "(.*)")
 
-def multireplprefix(irc, source, msgtarget, args):
-    if utils.isAdmin(irc, source):
-        if irc.multirepl == True:
-            irc.multirepl = False
-            irc.repls.run(msgtarget, irc.repl)
-            irc.repl = ""
-        else:
-            irc.multirepl = True
+def multireplprefix(irc, target, args, cmdargs):
+    if not utils.isAdmin(irc, args.sender):
+        return
+
+    if irc.multirepl == True:
+        irc.multirepl = False
+        irc.repls.run(target, irc.repl)
+        irc.repl = ""
+    else:
+        irc.multirepl = True
 
 utils.add_regex(multireplprefix, '"""')
