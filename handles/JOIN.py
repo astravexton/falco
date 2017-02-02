@@ -1,10 +1,9 @@
 import fnmatch, time
 
 def handle_JOIN(irc, args):
-
     chan = args.args[0]
-    account = None
-    gecos = None
+    account = ""
+    gecos = ""
     if len(args.args) > 1:
         account = args.args[1]
     if len(args.args) > 2:
@@ -13,52 +12,15 @@ def handle_JOIN(irc, args):
     ident = args.sender.ident
     host = args.sender.mask
 
-    irc.chanmodes[chan] = list()
-
-    if chan not in irc.channels:
-        irc.channels[chan] = {
-            "modes": (),
-            "nicks": dict(),
-            "buffer": [],
-            "autojoin": False,
-            "autodeop": True
-        }
-
-    elif chan in irc.channels:
-        # irc.channels[chan]["nicks"] = dict()
-        irc.channels[chan]["modes"] = ()
-
-    if nick not in irc.nicks:
-        irc.nicks[nick] = {
-            "nick": nick,
-            "ident": ident,
-            "host": host,
-            "gecos": None,
-            "channels": list(),
-            "server": None,
-            "account": account
-        }
-    elif nick in irc.nicks:
-        irc.nicks[nick]["ident"] = ident
-        irc.nicks[nick]["host"] = host
-        irc.nicks[nick]["account"] = account
-        irc.nicks[nick]["gecos"] = gecos
-    try:
-        if chan not in irc.nicks[nick]["channels"]:
-            irc.nicks[nick]["channels"].append(chan)
-    except:
-        print("{} not in irc.nicks".format(nick))
-
-    if chan not in irc.autokick:
-        irc.autokick[chan] = list()
-
-    irc.channels[chan]["nicks"][nick] = ""
-
-    if chan not in irc.conf.get("donotlog", []):
-        irc.nicks[nick]["lastaction"] = {"action": "JOIN", "args": None, "time": time.time(), "chan": chan}
-
-    if chan in irc.autokick:
-        for user in irc.autokick[chan]:
-            if fnmatch.fnmatch(args.sender.hostmask, user) or fnmatch.fnmatch(nick, user):
-                irc.chanmodes[chan].append("KICK {} {} :Goodbye (autokick)".format(chan, nick))
-                irc.send("PRIVMSG ChanServ :OP {}".format(chan))
+    chanObj = irc.get_channel(chan)
+    if nick not in chanObj.members.keys():
+        userObj = irc.get_user(nick)
+        userObj.host = host
+        userObj.user = ident
+        userObj.gecos = gecos
+        userObj.nickname = nick
+        userObj.channels[chan] = chanObj
+        chanObj.add_member(nick, userObj)
+        irc.users[nick] = userObj
+        if chan not in irc.conf.get("donotlog", []):
+            userObj.lastaction = {"action": "JOIN", "args": None, "time": time.time(), "chan": chan}

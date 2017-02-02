@@ -2,20 +2,14 @@ import time
 
 def handle_PART(irc, args):
     # args: ["#channel"]
-    # source: |!Karkat@hide-A31D54D.zyr.io
-
     chan = args.args[0]
     nick = args.sender.nick
     ident = args.sender.ident
     host = args.sender.hostmask
-
+    chanObj = irc.get_channel(chan)
+    userObj = irc.get_user(nick)
+    chanObj.remove_member(userObj)
+    userObj.remove_channel(chan)
     if chan not in irc.conf.get("donotlog", []):
-        irc.nicks[nick]["lastaction"] = {"action": "PART", "args": args.args[1] if len(args.args) == 2 else "", "time": time.time(), "chan": chan}
-
-    try:
-        irc.nicks[nick]["channels"].remove(chan)
-        del irc.channels[chan]["nicks"][nick]
-    except KeyError:
-        pass
-    except ValueError:
-        pass
+        reason = args.args[1] if len(args.args) > 1 else ""
+        userObj.lastaction = {"action": "PART", "args": reason, "time": time.time(), "chan": chan}

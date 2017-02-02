@@ -2,11 +2,11 @@ import re, requests
 from html.parser import HTMLParser
 from utils import *
 
-def youtube(irc, source, msgtarget, args):
+def youtube(irc, target, args, cmdargs):
     """youtube/yt <query> -- returns the first result for <query>"""
     yt = YTsearch(args)
     s = "http://youtu.be/{url} │ {title} │ {uploader} │ {views} views"
-    irc.msg(msgtarget, s.format(
+    irc.msg(target, s.format(
         url=yt["items"][0]["id"],
         title=yt["items"][0]["snippet"]["title"],
         uploader=yt["items"][0]["snippet"]["channelTitle"],

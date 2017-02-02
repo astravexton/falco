@@ -2,9 +2,74 @@ import fnmatch, time, re, glob, os, imp, datetime, requests
 from collections import defaultdict
 from log import log
 
-global bot_commands, bot_regexes, connections
+global bot_commands, bot_regexes, connections, user_hooks, command_hooks
+
+user_hooks = {}
 
 api_keys = []
+
+def bot_version():
+    pipe = os.popen("git log --oneline")
+    output = pipe.read().split("\n")
+    pipe.close()
+    count = len(output)
+    ver = output[0].split(" ")[0]
+    return "%s-%d" % (ver, count)
+
+class User:
+    def __init__(self, server, nickname, user, host, gecos=None, account=None):
+        self.nickname = nickname
+        self.user = user
+        self.host = host
+        self.gecos = gecos
+        self.account = account
+        self.channels = {}
+        self.lastaction = {"action": "", "args": None, "time": 0, "chan": None}
+        self.ignored = False
+        self.reminders = []
+
+    @property
+    def prefix(self):
+        return "%s!%s@%s" % (self.nickname, self.user, self.host)
+
+    def remove_channel(self, channel):
+        del self.channels[channel]
+
+class Channel:
+    def __init__(self, server, name):
+        self.server = server
+        self.name = name
+        self.members = {}
+        self._topic = ""
+        self.oldtopics = []
+        self.key = None
+        self.modes = []
+        self.usermodes = {}
+        self.bans = []
+        self.quiets = []
+        self.invexs = []
+        self.excepts = []
+        self.buffer = []
+
+    def add_member(self, nickname, user):
+        self.members[nickname] = user
+
+    @property
+    def topic(self):
+        return self._topic
+
+    @topic.setter
+    def topic(self, value):
+        self._topic = value
+
+    def append_old_topic(self, value):
+        self.oldtopics.insert(0, value)
+        if len(self.oldtopics) >= 25:
+            self.oldtopics.pop(-1)
+
+    def remove_member(self, client):
+        if client.nickname in self.members.keys():
+            del self.members[client.nickname]
 
 def lookup(id):
     params = {
@@ -72,7 +137,7 @@ class parseArgs(object):
                 real_args.append(arg)
                 break
         if "@" not in real_args[0]:
-            self.sender = real_args[0]
+            self.sender = Address("*!*@"+real_args[0].lstrip(":"))
         else:
             self.sender = Address(real_args[0])
         self.type = real_args[1]
@@ -161,19 +226,25 @@ def add_cmd(func, name=None):
 
     name = name
     bot_commands[name] = func
-    #print("Added command {} as {}".format(func, name))
+    log.debug("Added command %r for %r", name, func.__name__)
 
 def add_regex(func, regex=None):
     if regex == None:
-        log.warn("Unable to add regex for %s", func.__name__)
+        log.warn("Unable to add regex for %r", func.__name__)
     else:
         bot_regexes[re.compile(regex)] = func
-        log.debug("Added regex %s for %s", regex, func.__name__)
+        log.debug("Added regex %r for %r", regex, func.__name__)
 
 def add_hook(func, command):
     """Add a hook <func> for command <command>."""
-    command = command.upper()
-    command_hooks[command].append(func)
+    if type(command) == list:
+        for c in command:
+            command = c.upper()
+            command_hooks[command].append(func)
+            log.debug("Added hook %r on %r" % (func.__name__, command))
+    else:
+        command_hooks[command].append(func)
+        log.debug("Added hook %r on %r" % (func.__name__, command))
 
 chanmodes = {'op': 'o', 'voice': 'v', 'ban': 'b', 'key': 'k', 'limit':
              'l', 'moderated': 'm', 'noextmsg': 'n', 'noknock': 'p',
@@ -240,8 +311,8 @@ def isAdmin(irc, user):
         if fnmatch.fnmatch(user.hostmask, admin):
             return True
     try:
-        account = irc.nicks[user.nick]["account"]
-        if account in irc.admins["accounts"]:
+        userObj = irc.get_user(user.nick)
+        if userObj.account in irc.admins["accounts"]:
             return True
     except:
         return False
@@ -252,19 +323,14 @@ def isOp(irc, user):
     for admin in irc.admins["hosts"]:
         if fnmatch.fnmatch(user.hostmask, admin):
             return True
-    for ops in irc.ops:
-        if fnmatch.fnmatch(user.hostmask, ops):
-            return True
     try:
-        account = irc.nicks[user.nick]["account"]
-        if account in irc.ops["accounts"]:
+        userObj = irc.get_user(user.nick)
+        if userObj.account in irc.ops["accounts"]:
             return True
     except:
         return False
-    try:
-        return True if user.nick in irc.channels["##chat-bridge"]["nicks"] else False
-    except:
-        return False
+
+    return False
 
 def getNewNick(irc, nick=None, new=True):
     if not nick:
@@ -342,3 +408,91 @@ def check_mask(irc, ip):
     if len(set.union(*l)) == len(re.split("[./:]", irc.host)): return True
     else: return False
 
+def overline(text):
+    return "\u0305" + "\u0305".join(text)
+
+
+def strikethrough(text):
+    text = re.split(
+        r"(\x03(?:\d{0,2}(?:,\d{1,2})?)?|\x1f|\x0f|\x16|\x02|\u0305)",
+        text
+    )
+    # Replace odd indices with strikethrough'd versions
+    text = [
+        t if i % 2 else "\u0336" + "\u0336".join(t) for i, t in enumerate(text)
+    ]
+    return "".join(text)
+
+
+def underline(text):
+    return "\u0332" + "\u0332".join(text)
+
+
+def smallcaps(text):
+    # TODO: Move into config
+    caps = {
+        'p': 'ᴘ', 'q': 'ǫ', 'r': 'ʀ', 's': 'ꜱ', 't': 'ᴛ', 'u': 'ᴜ', 'v': 'ᴠ',
+        'w': 'ᴡ', 'x': 'x', 'y': 'ʏ', 'z': 'ᴢ', 'a': 'ᴀ', 'b': 'ʙ', 'c': 'ᴄ',
+        'd': 'ᴅ', 'e': 'ᴇ', 'f': 'ꜰ', 'g': 'ɢ', 'h': 'ʜ', 'i': 'ɪ', 'j': 'ᴊ',
+        'k': 'ᴋ', 'l': 'ʟ', 'm': 'ᴍ', 'n': 'ɴ', 'o': 'ᴏ'
+    }
+    return "".join(caps.get(i, i) for i in text)
+
+
+def fullwidth(text):
+    full = {
+        '|': '｜', '~': '～', 'x': 'ｘ', 'z': 'ｚ', 't': 'ｔ', 'v': 'ｖ',
+        'p': 'ｐ', 'r': 'ｒ', 'l': 'ｌ', 'n': 'ｎ', 'h': 'ｈ', 'j': 'ｊ',
+        'd': 'ｄ', 'f': 'ｆ', '`': '｀', 'b': 'ｂ', '\\': '＼', '^': '＾',
+        'X': 'Ｘ', 'Z': 'Ｚ', 'T': 'Ｔ', 'V': 'Ｖ', 'P': 'Ｐ', 'R': 'Ｒ',
+        'L': 'Ｌ', 'N': 'Ｎ', 'H': 'Ｈ', 'J': 'Ｊ', 'D': 'Ｄ', 'F': 'Ｆ',
+        '@': '＠', 'B': 'Ｂ', '<': '＜', '>': '＞', '8': '８', ':': '：',
+        '4': '４', '6': '６', '0': '０', '2': '２', ',': '，', '.': '．',
+        '(': '（', '*': '＊', '$': '＄', '&': '＆', '"': '＂', '}': '｝',
+        'y': 'ｙ', '{': '｛', 'u': 'ｕ', 'w': 'ｗ', 'q': 'ｑ', 's': 'ｓ',
+        'm': 'ｍ', 'o': 'ｏ', 'i': 'ｉ', 'k': 'ｋ', 'e': 'ｅ', 'g': 'ｇ',
+        'a': 'ａ', 'c': 'ｃ', ']': '］', '_': '＿', 'Y': 'Ｙ', '[': '［',
+        'U': 'Ｕ', 'W': 'Ｗ', 'Q': 'Ｑ', 'S': 'Ｓ', 'M': 'Ｍ', 'O': 'Ｏ',
+        'I': 'Ｉ', 'K': 'Ｋ', 'E': 'Ｅ', 'G': 'Ｇ', 'A': 'Ａ', 'C': 'Ｃ',
+        '=': '＝', '?': '？', '9': '９', ';': '；', '5': '５', '7': '７',
+        '1': '１', '3': '３', '-': '－', '/': '／', ')': '）', '+': '＋',
+        '%': '％', "'": '＇', '!': '！', '#': '＃'
+    }
+    return "".join(full.get(i, i) for i in text)
+
+def pretty_date(delta):
+    """
+    Get a datetime object or a int() Epoch timestamp and return a
+    pretty string like 'an hour ago', 'Yesterday', '3 months ago',
+    'just now', etc
+    """
+    delta = (time.time() - delta)
+    diff = datetime.timedelta(seconds=delta)
+    second_diff = diff.seconds
+    day_diff = diff.days
+
+    if day_diff < 0:
+        return 'just now'
+
+    if day_diff == 0:
+        if second_diff < 10:
+            return "just now"
+        if second_diff < 60:
+            return str(int(second_diff)) + " seconds ago"
+        if second_diff < 120:
+            return "a minute ago"
+        if second_diff < 3600:
+            return str(int(second_diff / 60)) + " minutes ago"
+        if second_diff < 7200:
+            return "an hour ago"
+        if second_diff < 86400:
+            return str(int(second_diff / 3600)) + " hours ago"
+    if day_diff == 1:
+        return "Yesterday"
+    if day_diff < 7:
+        return str(day_diff) + " days ago"
+    if day_diff < 31:
+        return str(int(day_diff / 7)) + " weeks ago"
+    if day_diff < 365:
+        return str(int(day_diff / 30)) + " months ago"
+    return str(int(day_diff / 365)) + " years ago"

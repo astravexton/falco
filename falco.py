@@ -4,29 +4,16 @@ import glob
 import os
 import socket
 import time
-import re
 import sys
 import json
 import threading
-import imp
+import traceback
+import concurrent.futures
 from ssl import wrap_socket
 from log import log
 import utils
-
-def reload_handlers(init=False):
-    handlers = set(glob.glob(os.path.join("handles", "*.py")))
-    for filename in handlers:
-        mtime = os.stat(filename).st_mtime
-        if mtime != mtimes.get(filename):
-            mtimes[filename] = mtime
-            try:
-                eval(compile(open(filename, 'U').read(), filename, 'exec'), globals())
-            except Exception as e:
-                log.critical("Unable to reload %s: %s", filename, e)
-                if init:
-                    sys.exit(1)
-                continue
-            log.info("(Re)Loaded %s", filename)
+import hooks
+import imp
 
 def reload_plugins(init=False):
     plugins_folder = [os.path.join(os.getcwd(), 'plugins')]
@@ -37,7 +24,7 @@ def reload_plugins(init=False):
         if mtime != mtimes.get(_plugin):
             mtimes[_plugin] = mtime
             try:
-                moduleinfo = imp.find_module(plugin.split("/")[1].split(".")[0], plugins_folder)
+                moduleinfo = imp.find_module(plugin.split(os.path.sep)[1].split(".")[0], plugins_folder)
                 pl = imp.load_source(plugin, moduleinfo[1])
             except ImportError as e:
                 if str(e).startswith('No module named'):
@@ -47,14 +34,17 @@ def reload_plugins(init=False):
                     if init:
                         sys.exit(1)
             except BaseException as e:
+                traceback.print_exc()
                 log.error(e)
+                if init == True:
+                    sys.exit(1)
                 pass
             else:
                 if hasattr(pl, 'main'):
                     for server in utils.connections.values():
                         pl.main(server)
-                        log.debug('%r Calling main() function of plugin %r', server.netname, pl)
-            log.info("(Re)Loaded %s", _plugin)
+                        log.debug('(%s) Calling main() function of plugin %r', server.netname, plugin)
+            log.debug("(Re)Loaded %s", plugin)
 
 def reload_config():
     for irc in utils.connections.values():
@@ -68,6 +58,8 @@ def reload_config():
 
 def connectall():
     for server in utils.connections.values():
+        log.info("Starting %s connection thread" % server.name)
+        server.daemon = True
         server.start()
 
 mtimes = dict()
@@ -76,12 +68,12 @@ class IRC(threading.Thread):
 
     def __init__(self, conf, config_file):
         threading.Thread.__init__(self)
-        #self.daemon = True
-        self.data_dir = "data/"
+        self.data_dir = "data" + os.path.sep
         os.makedirs(self.data_dir, exist_ok=True)
         self.conf = conf
         self.conf_mtime = os.stat(config_file).st_mtime
         self.netname = self.conf["netname"]
+        self.name = self.netname
         self.rx = 0
         self.tx = 0
         self.txmsgs = 0
@@ -91,9 +83,10 @@ class IRC(threading.Thread):
         self.port = self.conf["port"]
         self.ssl = self.conf["ssl"]
         self.nick = self.conf["nick"]
-        self.pingfreq = 30
-        self.pingtimeout = self.pingfreq*2
-        self.pingwarn = 5
+        self.user = self.conf["ident"]
+        self.gecos = self.conf["gecos"]
+        self.autojoin = self.conf["autojoin"]
+        self.setmodes = self.conf["modes"]
         self.password = "6675636b796f75"
         self.prefixmodes = {'q': '~', 'a': '&', 'v': '+', 'o': '@', 'h': '%'}
         self.connected = False
@@ -105,159 +98,144 @@ class IRC(threading.Thread):
         self.identified = False
         self.cap = []
         self.capdone = False
+
+        self.users = {}
+        self.chans = {}
+
+        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+
         try:
-            self.nicks = json.load(open("data/{}-nicks.json".format(self.netname)))
-            self.channels = json.load(open("data/{}-channels.json".format(self.netname)))
-        except FileNotFoundError: 
+            self.nicks = json.load(open(self.data_dir + "{}-nicks.json".format(self.netname)))
+            self.channels = json.load(open(self.data_dir + "{}-channels.json".format(self.netname)))
+        except FileNotFoundError:
             self.channels = {}
             self.nicks = {}
         except json.decoder.JSONDecodeError as e:
             sys.exit("{} - {}".format(e, self.netname))
-        self.title_snarfer_allowed = []
-        self.title_snarfer_ignored_urls = []
-
-        self.pingTimer = None
-        self.pingtime = time.time()
-        self.lastping = self.pingtime
 
         self.reloadConfig()
 
     def reloadConfig(self):
-
         self.reply = self.conf["reply"]
-        self.user = self.conf["ident"]
-        self.gecos = self.conf["gecos"]
-        self.setmodes = self.conf["modes"]
         self.prefix = self.conf["prefix"]
         self.admins = self.conf["admins"]
-        self.autojoin = self.conf["autojoin"]
+        self.ops = self.conf["ops"]
         self.ignored = self.conf["ignored"]
-        self.autokick = self.conf["autokick"]
-        self.ops = self.conf.get("ops", [])
 
-    def run(self):
- 
+    def get_channel(self, channelname):
+        if channelname not in self.chans.keys():
+            self.chans[channelname] = utils.Channel(self, channelname)
+        return self.chans[channelname]
+
+    def get_user(self, nickname):
+        if nickname in self.users.keys():
+            return self.users[nickname]
+        else:
+            return utils.User("", "", "", "")
+
+    def run(self, override=False):
+
+        if not self.conf.get("active", False) and not override:
+            return
+
         self.connect()
-
-        self.connected = True
         while self.connected:
-            try:
-                data = utils.decode(self.socket.recv(2048))
-                self.ibuffer += data
-                while "\r\n" in self.ibuffer:
-                    reload_handlers()
-                    reload_plugins()
-                    reload_config()
+            data = utils.decode(self.socket.recv(2048))
+            self.ibuffer += data
+            while "\r\n" in self.ibuffer:
+                reload_plugins()
+                reload_config()
 
-                    line, self.ibuffer = self.ibuffer.split("\r\n", 1)
-                    line = line.strip()
+                line, self.ibuffer = self.ibuffer.split("\r\n", 1)
+                line = line.strip()
+                log.debug("(%s) -> %s", self.netname, line)
 
-                    parsed = utils.parseArgs(line)
-                    
-                    try:
-                        func = globals()["handle_"+parsed.type]
-                    except KeyError:
-                        log.warn("No handler for %s found", parsed.type)
-                    else:
-                        func(self, parsed)
+                self.rx += len(line)
+                self.rxmsgs += 1
 
-                    log.debug("(%s) -> %s", self.netname, line)
+                parsed = utils.parseArgs(line)
 
-                    self.rx += len(line)
-                    self.rxmsgs += 1
-
-                    args = line.split(" ")
-
-                    if not args:
-                        return
-
-                    if args[1] == "PONG":
-                        self.pingtime = int(time.time() - self.lastping)
-                        self.lastping = time.time()
-
-                        if self.pingtime - self.pingfreq > self.pingwarn:
-                            log.warn("(%s) Lag: %s seconds", self.netname,
-                                        round(self.pingtime - self.pingfreq, 3))
-
-            except KeyboardInterrupt:
-                self.pingTimer.stop()
-                self.schedulePing() # writes nicks and channels to files,
-                                    # will be moved to own function eventually
-                self.disconnect("CTRL-C at console.")
+                try:
+                    for hook in utils.command_hooks[parsed.type]:
+                        # log.info("(%s) Calling handle %r with args %r", self.netname, hook.__name__, parsed.args)
+                        hook(self, parsed)
+                except TypeError as e:
+                    log.warn("(%s) %s for %r", self.netname, e, hook)
+                    traceback.print_exc()
+                except:
+                    traceback.print_exc()
+                    pass
 
     def msg(self, target, message, reply=None):
-        reply = self.reply if not reply else reply
-        if self.hasink:
-            self.send("{} {} :\x03{}│\x0f {}".format(reply, target, self.color, message))
-        else:
-            self.send("{} {} :{}".format(reply, target, message))
         time.sleep(0.3)
 
-    def kick(self, chan, target, message="Goodbye"):
-        self.send("KICK {} {} :{}".format(chan, target, message))
+        if self.hasink:
+            self.send("{} {} :\x03{}│\x0f {}".format(reply or self.reply, target, self.color, message))
+            return
+
+        self.send("{} {} :{}".format(reply, target, message))
 
     def send(self, data):
         data = data.replace('\n', ' ').replace("\a", "")
         data = data.encode("utf-8") + b"\r\n"
         stripped_data = data.decode("utf-8").strip("\n")
-        log.debug("(%s) <- %s", self.netname, stripped_data)
+
+        log.debug("(%s) <- %s", self.netname, data)
+
         self.tx += len(data)
         self.txmsgs += 1
+
         try:
             self.socket.send(data)
         except AttributeError:
-            log.debug("(%s) Dropping message %r; network isn't connected!", self.netname, stripped_data)
-
-    def schedulePing(self):
-        with open(self.data_dir+self.netname+"-nicks.json", "w") as f:
-            json.dump(self.nicks, f, indent=4)
-        with open(self.data_dir+self.netname+"-channels.json", "w") as f:
-            json.dump(self.channels, f, indent=4)
-        #if time.time() - self.lastping > self.pingtimeout:
-        #    self.disconnect("Ping timeout: {} seconds".format(round(self.pingtime - self.pingfreq)))
-        #    self.run()
-        #self.send("PING {}".format(time.time()))
-        self.pingTimer = threading.Timer(self.pingfreq, self.schedulePing)
-        self.pingTimer.daemon = True
-        self.pingTimer.start()
+            log.warn("(%s) Dropping message %r; network isn't connected!", self.netname, stripped_data)
+            self.connected = False
 
     def connect(self):
+        self.ibuffer = ""
+        self.cap = []
+        self.capdone = False
         self.started = time.time()
-        log.debug("(%s) Attempting to connect to %s/%s as %s",
+        log.info("(%s) Attempting to connect to %s/%s as %s",
                   self.netname, self.server, self.port, self.nick)
+    
         self.socket = socket.create_connection((self.server, self.port))
         if self.ssl:
             self.socket = wrap_socket(self.socket)
+
         self.send("CAP LS")
+
         if self.conf.get("password"):
             self.send("PASS {}".format(self.conf["password"]))
+
         self.send("USER {} 0 * :{}".format(self.user, self.gecos))
         self.send("NICK {}".format(self.nick))
-        self.ibuffer = ""
+        self.connected = True
         log.debug("(%s) Running main loop", self.netname)
-        self.schedulePing() # this seems to not work as expected, will fix at some point
 
     def disconnect(self, quit=None, terminate=True):
         self.send("QUIT :{}".format("Goodbye" if not quit else quit))
         self.connected = False
-        self.socket.close()
-        self.pingTimer.cancel()
+        try:
+            self.socket.close()
+        except AttributeError:
+            pass
         if terminate:
             sys.exit(0)
 
     def reconnect(self):
         self.socket.close()
         self.connected = False
-        self.pingTimer.cancel()
         self.run()
 
 if __name__ == "__main__":
 
-    log.info("Starting falco")
+    log.info("Starting falco (%s)", utils.bot_version())
 
     try:
         config_file = sys.argv[1]
         global conf
+
         with open(config_file, 'r') as f:
             conf = json.load(f)
 
@@ -273,13 +251,21 @@ if __name__ == "__main__":
         log.critical("No config file supplied.")
         sys.exit(1)
 
-    reload_handlers(init=True)
-
     utils.api_keys = conf["api_keys"]
-    try:
-        for server in conf["servers"].values():
-            utils.connections[server["netname"]] = IRC(server, config_file)
-        reload_plugins(init=True)
-        connectall()
-    except KeyboardInterrupt:
-        print(" - exiting")
+
+    for server in conf["servers"].values():
+        utils.connections[server["netname"]] = IRC(server, config_file)
+
+    reload_plugins(init=True)
+    hooks.main()
+
+    connectall()
+
+    while True:
+        try:
+            time.sleep(10)
+        except KeyboardInterrupt:
+            sys.stdout.write("\r")
+            for server in utils.connections.values():
+                server.disconnect("CTRL-C at console", terminate=False)
+            sys.exit()
