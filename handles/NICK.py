@@ -1,3 +1,5 @@
+import time
+
 def handle_NICK(irc, args):
     # source: nathan!nathan@392D2D96.A2275890.DCE72A8F.IP
     # args: ['nathanaan']

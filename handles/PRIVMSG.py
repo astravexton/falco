@@ -35,8 +35,13 @@ def handle_NOTICE(irc, args):
     if m:
         command, cmdargs = m.groups()
         if command in bot_commands.keys():
-            # log.info("(%s) Calling command %r with args %r", irc.netname, command, cmdargs)
+            log.info("(%s) Calling command %r with args %r", irc.netname, command, cmdargs)
             irc.executor.submit(bot_commands[command], irc, chan, args, cmdargs)
+
+    for r in bot_regexes.items():
+        if r[0].match(args.args[1]):
+            # log.info("(%s) Calling regex %r with args %r", irc.netname, r[1].__name__, r[0].match(args.args[1]).groups())
+            r[1](irc, chan, args, r[0].match(args.args[1]).groups())
 
     if chan not in irc.conf.get("donotlog", []):
         userObj = irc.get_user(nick)

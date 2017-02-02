@@ -61,7 +61,6 @@ def handle_324(irc, args):
     # ['falco', '#test', '+ntlk', '2', 'test']
     chan = args.args[1]
     modes = args.args[2:]
-    print(args.args)
     chanObj = irc.get_channel(chan)
     chanObj.modes = parse_modes(irc, modes)["add"]
     # irc.channels[chan]["modes"] = parse_modes(irc, modes)["add"]
@@ -143,8 +142,8 @@ def handle_354(irc, args):
             userObj.user = user
             userObj.gecos = gecos
             userObj.nickname = nick
-            userObj.account -  account
-        irc.users[nick].append(userObj)
+            userObj.account =  account
+        irc.users[nick] = userObj
         chanObj.add_member(nick, userObj)
         userObj.channels[chan] = chanObj
         # if nick not in irc.nicks:

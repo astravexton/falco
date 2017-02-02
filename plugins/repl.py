@@ -44,7 +44,7 @@ def repl(irc, target, args, cmdargs):
 utils.add_cmd(repl, ">>")
 
 def multirepl(irc, target, args, cmdargs):
-    if utils.isAdmin(irc, source) and irc.multirepl == True and cmdargs != '"""':
+    if utils.isAdmin(irc, args.sender) and irc.multirepl == True and cmdargs != '"""':
         irc.repl+=cmdargs+"\n"
 
 utils.add_regex(multirepl, "(.*)")

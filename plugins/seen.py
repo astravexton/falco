@@ -1,4 +1,4 @@
-from utils import add_cmd, timesince
+from utils import add_cmd, pretty_date
 
 @add_cmd
 def seen(irc, target, args, cmdargs):
@@ -16,30 +16,30 @@ def seen(irc, target, args, cmdargs):
         return
 
     if nickObj.nickname == target:
-        irc.msg(target, "{} ({}) was last seen sending me a pm about {} ago".format(
-            nickObj.nickname, nickObj.prefix, timesince(lastaction["time"])))
+        irc.msg(target, "{} ({}) was last seen sending me a pm {}".format(
+            nickObj.nickname, nickObj.prefix, pretty_date(lastaction["time"])))
         return
 
     if lastaction["action"] == "PRIVMSG":
-        irc.msg(target, "{} ({}) was last seen saying \"{}\" about {} ago in {}".format(
-            nickObj.nickname, nickObj.prefix, lastaction["args"], timesince(lastaction["time"]), lastaction["chan"]))
+        irc.msg(target, "{} ({}) was last seen saying \"{}\" {} in {}".format(
+            nickObj.nickname, nickObj.prefix, lastaction["args"], pretty_date(lastaction["time"]), lastaction["chan"]))
 
     elif lastaction["action"] == "JOIN":
-        irc.msg(target, "{} ({}) was seen joining {} about {} ago".format(
+        irc.msg(target, "{} ({}) was seen joining {} {}".format(
             nickObj.nickname, nickObj.prefix, lastaction["chan"], timesince(lastaction["time"])))
 
     elif lastaction["action"] == "PART":
-        irc.msg(target, "{} ({}) was seen parting {} about {} ago ({})".format(
-            nickObj.nickname, nickObj.prefix, lastaction["chan"], timesince(lastaction["time"]), lastaction["args"] or ""))
+        irc.msg(target, "{} ({}) was seen parting {} {} ({})".format(
+            nickObj.nickname, nickObj.prefix, lastaction["chan"], pretty_date(lastaction["time"]), lastaction["args"] or ""))
 
     elif lastaction["action"] == "QUIT":
-        irc.msg(target, "{} ({}) was seen quitting about {} ago ({})".format(
-            nickObj.nickname, nickObj.prefix, timesince(lastaction["time"]), lastaction["args"]))
+        irc.msg(target, "{} ({}) was seen quitting {} ({})".format(
+            nickObj.nickname, nickObj.prefix, pretty_date(lastaction["time"]), lastaction["args"]))
 
     elif lastaction["action"] == "KICK":
-        irc.msg(target, "{} ({}) was last seen kicked from {} about {} ago ({})".format(
-            nickObj.nickname, nickObj.prefix, lastaction["chan"], timesince(lastaction["time"]), lastaction["args"]))
+        irc.msg(target, "{} ({}) was last seen kicked from {} {} ({})".format(
+            nickObj.nickname, nickObj.prefix, lastaction["chan"], pretty_date(lastaction["time"]), lastaction["args"]))
 
     elif lastaction["action"] == "NICK":
-        irc.msg(target, "{} ({}) was last seen changing nick to {} about {} ago".format(
-            nickObj.nickname, nickObj.prefix, lastaction["args"], timesince(lastaction["time"])))
+        irc.msg(target, "{} ({}) was last seen changing nick to {} {}".format(
+            nickObj.nickname, nickObj.prefix, lastaction["args"], pretty_date(lastaction["time"])))

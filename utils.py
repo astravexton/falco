@@ -26,6 +26,7 @@ class User:
         self.channels = {}
         self.lastaction = {"action": "", "args": None, "time": 0, "chan": None}
         self.ignored = False
+        self.reminders = []
 
     @property
     def prefix(self):
@@ -42,7 +43,7 @@ class Channel:
         self._topic = ""
         self.oldtopics = []
         self.key = None
-        self.chanmodes = []
+        self.modes = []
         self.usermodes = {}
         self.bans = []
         self.quiets = []
@@ -407,3 +408,91 @@ def check_mask(irc, ip):
     if len(set.union(*l)) == len(re.split("[./:]", irc.host)): return True
     else: return False
 
+def overline(text):
+    return "\u0305" + "\u0305".join(text)
+
+
+def strikethrough(text):
+    text = re.split(
+        r"(\x03(?:\d{0,2}(?:,\d{1,2})?)?|\x1f|\x0f|\x16|\x02|\u0305)",
+        text
+    )
+    # Replace odd indices with strikethrough'd versions
+    text = [
+        t if i % 2 else "\u0336" + "\u0336".join(t) for i, t in enumerate(text)
+    ]
+    return "".join(text)
+
+
+def underline(text):
+    return "\u0332" + "\u0332".join(text)
+
+
+def smallcaps(text):
+    # TODO: Move into config
+    caps = {
+        'p': 'ᴘ', 'q': 'ǫ', 'r': 'ʀ', 's': 'ꜱ', 't': 'ᴛ', 'u': 'ᴜ', 'v': 'ᴠ',
+        'w': 'ᴡ', 'x': 'x', 'y': 'ʏ', 'z': 'ᴢ', 'a': 'ᴀ', 'b': 'ʙ', 'c': 'ᴄ',
+        'd': 'ᴅ', 'e': 'ᴇ', 'f': 'ꜰ', 'g': 'ɢ', 'h': 'ʜ', 'i': 'ɪ', 'j': 'ᴊ',
+        'k': 'ᴋ', 'l': 'ʟ', 'm': 'ᴍ', 'n': 'ɴ', 'o': 'ᴏ'
+    }
+    return "".join(caps.get(i, i) for i in text)
+
+
+def fullwidth(text):
+    full = {
+        '|': '｜', '~': '～', 'x': 'ｘ', 'z': 'ｚ', 't': 'ｔ', 'v': 'ｖ',
+        'p': 'ｐ', 'r': 'ｒ', 'l': 'ｌ', 'n': 'ｎ', 'h': 'ｈ', 'j': 'ｊ',
+        'd': 'ｄ', 'f': 'ｆ', '`': '｀', 'b': 'ｂ', '\\': '＼', '^': '＾',
+        'X': 'Ｘ', 'Z': 'Ｚ', 'T': 'Ｔ', 'V': 'Ｖ', 'P': 'Ｐ', 'R': 'Ｒ',
+        'L': 'Ｌ', 'N': 'Ｎ', 'H': 'Ｈ', 'J': 'Ｊ', 'D': 'Ｄ', 'F': 'Ｆ',
+        '@': '＠', 'B': 'Ｂ', '<': '＜', '>': '＞', '8': '８', ':': '：',
+        '4': '４', '6': '６', '0': '０', '2': '２', ',': '，', '.': '．',
+        '(': '（', '*': '＊', '$': '＄', '&': '＆', '"': '＂', '}': '｝',
+        'y': 'ｙ', '{': '｛', 'u': 'ｕ', 'w': 'ｗ', 'q': 'ｑ', 's': 'ｓ',
+        'm': 'ｍ', 'o': 'ｏ', 'i': 'ｉ', 'k': 'ｋ', 'e': 'ｅ', 'g': 'ｇ',
+        'a': 'ａ', 'c': 'ｃ', ']': '］', '_': '＿', 'Y': 'Ｙ', '[': '［',
+        'U': 'Ｕ', 'W': 'Ｗ', 'Q': 'Ｑ', 'S': 'Ｓ', 'M': 'Ｍ', 'O': 'Ｏ',
+        'I': 'Ｉ', 'K': 'Ｋ', 'E': 'Ｅ', 'G': 'Ｇ', 'A': 'Ａ', 'C': 'Ｃ',
+        '=': '＝', '?': '？', '9': '９', ';': '；', '5': '５', '7': '７',
+        '1': '１', '3': '３', '-': '－', '/': '／', ')': '）', '+': '＋',
+        '%': '％', "'": '＇', '!': '！', '#': '＃'
+    }
+    return "".join(full.get(i, i) for i in text)
+
+def pretty_date(delta):
+    """
+    Get a datetime object or a int() Epoch timestamp and return a
+    pretty string like 'an hour ago', 'Yesterday', '3 months ago',
+    'just now', etc
+    """
+    delta = (time.time() - delta)
+    diff = datetime.timedelta(seconds=delta)
+    second_diff = diff.seconds
+    day_diff = diff.days
+
+    if day_diff < 0:
+        return 'just now'
+
+    if day_diff == 0:
+        if second_diff < 10:
+            return "just now"
+        if second_diff < 60:
+            return str(int(second_diff)) + " seconds ago"
+        if second_diff < 120:
+            return "a minute ago"
+        if second_diff < 3600:
+            return str(int(second_diff / 60)) + " minutes ago"
+        if second_diff < 7200:
+            return "an hour ago"
+        if second_diff < 86400:
+            return str(int(second_diff / 3600)) + " hours ago"
+    if day_diff == 1:
+        return "Yesterday"
+    if day_diff < 7:
+        return str(day_diff) + " days ago"
+    if day_diff < 31:
+        return str(int(day_diff / 7)) + " weeks ago"
+    if day_diff < 365:
+        return str(int(day_diff / 30)) + " months ago"
+    return str(int(day_diff / 365)) + " years ago"

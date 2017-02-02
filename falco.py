@@ -13,6 +13,7 @@ from ssl import wrap_socket
 from log import log
 import utils
 import hooks
+import imp
 
 def reload_plugins(init=False):
     plugins_folder = [os.path.join(os.getcwd(), 'plugins')]
@@ -160,6 +161,7 @@ class IRC(threading.Thread):
                         hook(self, parsed)
                 except TypeError as e:
                     log.warn("(%s) %s for %r", self.netname, e, hook)
+                    traceback.print_exc()
                 except:
                     traceback.print_exc()
                     pass
