@@ -19,7 +19,7 @@ def ignore(irc, target, args, cmdargs):
         irc.msg(target, "ignore <nick>")
         return
 
-    userObj = irc.get_user(cmdargs.lower())
+    userObj = irc.get_user(cmdargs)
     if userObj.ignored == True:
         userObj.ignored = False
         irc.msg(target, "Unignored {}".format(userObj.nickname))
