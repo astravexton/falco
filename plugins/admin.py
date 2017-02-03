@@ -53,12 +53,10 @@ add_cmd(_exec, ">")
 
 def _shell(irc, target, args, cmdargs):
     "[$]$ <command>"
-    irc.msg(target, cmdargs)
-    return
+
     if not isAdmin(irc, args.sender):
         return
-
-    command = "/bin/bash -c {}".format(shlex.quote(cmdargs+" | ircize --remove"))
+    command = "/bin/bash -c {}".format(shlex.quote(cmdargs[1]+" | ircize --remove"))
     start, lines, dump = time.time(), 0, []
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     while True:
@@ -85,7 +83,7 @@ def _shell(irc, target, args, cmdargs):
     if lines > 10:
         key = requests.post("https://bin.zyr.io/documents", data=output.encode()).json()["key"]
         irc.msg(target, "Output too long, see http://bin.zyr.io/"+key)
-    elif lines < 10 and not args[0]:
+    elif lines < 10 and not cmdargs[0]:
         for line in dump:
             if line:
                 irc.msg(target, line)
