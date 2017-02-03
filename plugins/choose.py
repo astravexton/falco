@@ -2,7 +2,7 @@ import random
 from utils import add_regex
 
 def choose(irc, target, args, cmdargs):
-    choices = [c.strip() for c in cmdargs.split(",")]
+    choices = [c.strip() for c in cmdargs[0].split(",")]
     if len(choices) > 1 and choices:
         choice = random.choice(choices).strip()
         if choice:
