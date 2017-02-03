@@ -20,7 +20,7 @@ def ignore(irc, target, args, cmdargs):
         return
 
     userObj = irc.get_user(cmdargs)
-    if not userObj:
+    if not userObj.nickname:
         irc.msg(target, "I don't know who that is")
         return
 
