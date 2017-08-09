@@ -34,7 +34,7 @@ def weather(irc, target, args, cmdargs):
         wind_speed_mph = round(data["wind"]["speed"], 1)
         wind_speed_kmh = MPHtoKMH(wind_speed_mph)
         wind_direction = DEGtoDIR(int(data["wind"]["deg"]))
-        clouds_description = data["weather"][0]["main"]
+        clouds_description = data["weather"][0]["description"].title()
         irc.weather[args.sender.nick] = loc
         f = open("data/"+irc.server+"-weather.json", "w")
         f.write(json.dumps(irc.weather))

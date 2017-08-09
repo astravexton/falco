@@ -7,6 +7,8 @@ def handle_CAP(irc, args):
             caps = args.args[2].split(" ")
             if "extended-join" in caps:
                 irc.cap.append("extended-join")
+            if "account-notify" in caps:
+                irc.cap.append("account-notify")
             if irc.conf.get("sasl"):
                 irc.cap.append("sasl")
             if irc.cap:
