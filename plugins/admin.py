@@ -34,10 +34,10 @@ def ignore(irc, target, args, cmdargs):
 @add_cmd
 def help(irc, target, args, cmdargs):
     try:
-        irc.msg(source.nick, bot_commands[args].__doc__)
+        irc.msg(target, bot_commands[cmdargs].__doc__)
     except:
-        cmds = ", ".join(bot_commands.keys())
-        irc.msg(source.nick, "Commands: {}".format(cmds))
+        cmds = ", ".join(bot_commands)
+        irc.msg(target, "Commands: {}".format(cmds))
 
 def _exec(irc, target, args, cmdargs):
     if not isAdmin(irc, args.sender):
@@ -92,19 +92,18 @@ def _shell(irc, target, args, cmdargs):
             if line:
                 irc.msg(target, line)
 
-add_regex(_shell, "^\$(\$)? (.*)")
+add_regex(_shell, r"^\$(\$)? (.*)")
 
 def getinfo(irc, target, args, cmdargs):
     "getinfo -- returns PID, Threads and Virtual Memory"
     PID = os.getpid()
-    pipe = os.popen("cat /proc/%s/status" % PID)
-    out = pipe.read().split("\n")
+    result = subprocess.run(["cat", "/proc/%s/status" % PID], capture_output=True, text=True)
+    out = result.stdout.split("\n")
     for line in out:
         if line.strip().startswith("Threads:"):
             threads = line.strip().split()[1]
         elif line.strip().startswith("VmRSS:"):
             memory = line.strip().split(":")[1].split(" ")[-2]
-    pipe.close()
     ver = bot_version()
     memory = round(int(memory)/1000)
     rx = int(math.log(irc.rx,2)/10.0)
@@ -136,12 +135,11 @@ def regex(irc, target, args, cmdargs):
     chanObj = irc.get_channel(target)
     for line in chanObj.buffer[::-1]:
         m = re.search(cmdargs, line[1])
-        if not m:
-            pass
-        if c < 3:
-            irc.msg(target, "%s ago %s" % (timesince(line[0]), line[1]))
-            c+=1
-        else:
-            total+=1
+        if m:
+            if c < 3:
+                irc.msg(target, "%s ago %s" % (timesince(line[0]), line[1]))
+                c+=1
+            else:
+                total+=1
     if total > 1:
         irc.msg(target, "and {} more lines".format(total))

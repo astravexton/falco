@@ -19,7 +19,7 @@ def handle_MODE(irc, args):
         for mode in parsed_modes["add"]:
             if mode[0] in chanmodes["*D"]:
                 chanObj.modes.append(mode)
-            elif mode[0] in irc.prefixmodes.keys():
+            elif mode[0] in irc.prefixmodes:
                 chanObj.usermodes[mode[1]] = mode[0]
             elif mode[0] in chanmodes["*A"] + chanmodes["*B"]:
                 if mode[0] == "b": # ban
@@ -33,12 +33,12 @@ def handle_MODE(irc, args):
                 else:
                     chanObj.chanmodes.append(mode[1])
             else:
-                log.warn("(%s) mode not tracked: +%s %s", irc.netname, mode[0], mode[1])
+                log.warning("(%s) mode not tracked: +%s %s", irc.netname, mode[0], mode[1])
 
         for mode in parsed_modes["rem"]:
             if mode[0] in chanmodes["*D"]:
                 chanObj.modes.remove(mode)
-            elif mode[0] in irc.prefixmodes.keys():
+            elif mode[0] in irc.prefixmodes:
                 chanObj.usermodes[mode[1]] = ""
             elif mode[0] in chanmodes["*A"] + chanmodes["*B"]:
                 if mode[0] == "b": # ban
@@ -52,7 +52,7 @@ def handle_MODE(irc, args):
                 else:
                     chanObj.chanmodes.remove(mode[1])
             else:
-                log.warn("(%s) mode not tracked: -%s %s", irc.netname, mode[0], mode[1])
+                log.warning("(%s) mode not tracked: -%s %s", irc.netname, mode[0], mode[1])
 
         if ("o", irc.nick) in parsed_modes["add"]:
             if target in irc.chanmodes:

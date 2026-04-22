@@ -10,11 +10,11 @@ def zeroclick(irc, target, args, cmdargs):
     params = {"q": cmdargs}
     url = "http://duckduckgo.com/lite/?"
     data = requests.get(url, params=params).content.decode()
-    search = re.findall("""\t<td>.\t\s+(.*?).<\/td>""",data,re.M|re.DOTALL)
+    search = re.findall(r"""\t<td>.\t\s+(.*?).<\/td>""",data,re.M|re.DOTALL)
     if search:
         answer = HTMLParser().unescape(search[-1].replace("<br>"," ").replace("<code>"," ").replace("</code>"," "))
         answer = re.sub("<[^<]+?>"," ",answer)
-        out = re.sub("\s+"," ",answer.strip())
+        out = re.sub(r"\s+"," ",answer.strip())
         if out:
             irc.msg(target, out.split(" More at")[0].split("}")[-1].strip())
         else: 
@@ -22,7 +22,7 @@ def zeroclick(irc, target, args, cmdargs):
     else:
         irc.msg(target, "No results found.")
 
-add_regex(zeroclick, "^>\?(.*)")
+add_regex(zeroclick, r"^>\?(.*)")
 
 @add_cmd
 def ddg(irc, target, args, cmdargs):
@@ -61,7 +61,7 @@ def search(q, n=0):
                 res = result.decode()
                 break
         if res:
-            m = re.search("""href="(.*)" rel="nofollow">(.*)<\/a>""", res)
+            m = re.search(r"""href="(.*)" rel="nofollow">(.*)<\/a>""", res)
             if m:
                 return "{} - \x1d{}\x1d".format(HTMLParser().unescape(re.sub("<[^<]+?>", "", m.group(2))), parse.unquote(m.group(1).split("=")[-1]))
         else:

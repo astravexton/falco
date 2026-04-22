@@ -12,4 +12,4 @@ def choose(irc, target, args, cmdargs):
     elif len(choices) == 1:
         irc.send("PRIVMSG {} :{}: {}".format(target, args.sender.nick, cmdargs[0]))
 
-add_regex(choose, "^\.choose (.*)")
+add_regex(choose, r"^\.choose (.*)")

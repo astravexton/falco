@@ -3,17 +3,17 @@
 import glob
 import os
 import socket
+import ssl
 import time
 import sys
 import json
 import threading
 import traceback
 import concurrent.futures
-from ssl import wrap_socket
+import importlib.util
 from log import log
 import utils
 import hooks
-import imp
 
 def reload_plugins(init=False):
     plugins_folder = [os.path.join(os.getcwd(), 'plugins')]
@@ -24,8 +24,10 @@ def reload_plugins(init=False):
         if mtime != mtimes.get(_plugin):
             mtimes[_plugin] = mtime
             try:
-                moduleinfo = imp.find_module(plugin.split(os.path.sep)[1].split(".")[0], plugins_folder)
-                pl = imp.load_source(plugin, moduleinfo[1])
+                module_name = plugin.split(os.path.sep)[1].split(".")[0]
+                spec = importlib.util.spec_from_file_location(module_name, _plugin)
+                pl = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(pl)
             except ImportError as e:
                 if str(e).startswith('No module named'):
                     log.error('Failed to load plugin %r: the plugin could not be found.', plugin)
@@ -123,12 +125,12 @@ class IRC(threading.Thread):
         self.ignored = self.conf["ignored"]
 
     def get_channel(self, channelname):
-        if channelname not in self.chans.keys():
+        if channelname not in self.chans:
             self.chans[channelname] = utils.Channel(self, channelname)
         return self.chans[channelname]
 
     def get_user(self, nickname):
-        if nickname in self.users.keys():
+        if nickname in self.users:
             return self.users[nickname]
         else:
             return utils.User("", "", "", "")
@@ -160,7 +162,7 @@ class IRC(threading.Thread):
                         # log.info("(%s) Calling handle %r with args %r", self.netname, hook.__name__, parsed.args)
                         hook(self, parsed)
                 except TypeError as e:
-                    log.warn("(%s) %s for %r", self.netname, e, hook)
+                    log.warning("(%s) %s for %r", self.netname, e, hook)
                     traceback.print_exc()
                 except:
                     traceback.print_exc()
@@ -173,7 +175,7 @@ class IRC(threading.Thread):
             self.send("{} {} :\x03{}│\x0f {}".format(reply or self.reply, target, self.color, message))
             return
 
-        self.send("{} {} :{}".format(reply, target, message))
+        self.send("{} {} :{}".format(reply or self.reply, target, message))
 
     def send(self, data):
         data = data.replace('\n', ' ').replace("\a", "")
@@ -188,7 +190,7 @@ class IRC(threading.Thread):
         try:
             self.socket.send(data)
         except AttributeError:
-            log.warn("(%s) Dropping message %r; network isn't connected!", self.netname, stripped_data)
+            log.warning("(%s) Dropping message %r; network isn't connected!", self.netname, stripped_data)
             self.connected = False
 
     def connect(self):
@@ -201,7 +203,8 @@ class IRC(threading.Thread):
     
         self.socket = socket.create_connection((self.server, self.port))
         if self.ssl:
-            self.socket = wrap_socket(self.socket)
+            context = ssl.create_default_context()
+            self.socket = context.wrap_socket(self.socket, server_hostname=self.server)
 
         self.send("CAP LS")
 

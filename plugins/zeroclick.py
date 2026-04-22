@@ -17,7 +17,7 @@ def zeroclick(irc, target, args, cmdargs):
     ).json()
     abstract = json["AbstractText"]
     abstract_url = json["AbstractURL"]
-    stripped_answer = re.sub("\s+", " ", re.sub("<[^<]+?>", " ", json["Answer"])).strip()
+    stripped_answer = re.sub(r"\s+", " ", re.sub(r"<[^<]+?>", " ", json["Answer"])).strip()
     if stripped_answer:
         irc.msg(target, stripped_answer[0:300])
     if abstract:

@@ -1,4 +1,4 @@
-import fnmatch, time, re, glob, os, imp, datetime, requests
+import fnmatch, time, re, glob, os, datetime, requests, subprocess
 from collections import defaultdict
 from log import log
 
@@ -9,9 +9,8 @@ user_hooks = {}
 api_keys = []
 
 def bot_version():
-    pipe = os.popen("git log --oneline")
-    output = pipe.read().split("\n")
-    pipe.close()
+    result = subprocess.run(["git", "log", "--oneline"], capture_output=True, text=True)
+    output = result.stdout.split("\n")
     count = len(output)
     ver = output[0].split(" ")[0]
     return "%s-%d" % (ver, count)
@@ -68,7 +67,7 @@ class Channel:
             self.oldtopics.pop(-1)
 
     def remove_member(self, client):
-        if client.nickname in self.members.keys():
+        if client.nickname in self.members:
             del self.members[client.nickname]
 
 def lookup(id):
@@ -144,7 +143,8 @@ class parseArgs(object):
         self.args = real_args[2:]
         if not args[0].startswith(":"):
             self.sender = None
-            self.type, self.args = real_args[0:]
+            self.type = real_args[0]
+            self.args = real_args[1:]
 
 def shorten(url, custom=None, key=None):
     p = {'url': url, 'shorturl': custom, 'format': 'json'}
@@ -153,7 +153,7 @@ def shorten(url, custom=None, key=None):
     if 'shorturl' in j:
         return j['shorturl']
     else:
-        raise url
+        raise ValueError(url)
 
 def expand(url):
     p = {'shorturl': url, 'format': 'json'}
@@ -230,7 +230,7 @@ def add_cmd(func, name=None):
 
 def add_regex(func, regex=None):
     if regex == None:
-        log.warn("Unable to add regex for %r", func.__name__)
+        log.warning("Unable to add regex for %r", func.__name__)
     else:
         bot_regexes[re.compile(regex)] = func
         log.debug("Added regex %r for %r", regex, func.__name__)
@@ -288,7 +288,7 @@ def parse_modes(irc, modes):
                             arg = oldargs[0]
                             #log.debug("Mode %s: coersing argument of '*' to %r.", mode, arg)
 
-                elif mode in prefixmodes.keys():
+                elif mode in prefixmodes:
                     #print('Mode {}: This mode is a prefix mode.'.format(mode))
                     arg = args.pop(0)
 
@@ -320,8 +320,8 @@ def isAdmin(irc, user):
     return False
 
 def isOp(irc, user):
-    for admin in irc.admins["hosts"]:
-        if fnmatch.fnmatch(user.hostmask, admin):
+    for op in irc.ops["hosts"]:
+        if fnmatch.fnmatch(user.hostmask, op):
             return True
     try:
         userObj = irc.get_user(user.nick)

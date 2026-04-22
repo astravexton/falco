@@ -13,7 +13,7 @@ def handle_JOIN(irc, args):
     host = args.sender.mask
 
     chanObj = irc.get_channel(chan)
-    if nick not in chanObj.members.keys():
+    if nick not in chanObj.members:
         userObj = irc.get_user(nick)
         userObj.host = host
         userObj.user = ident

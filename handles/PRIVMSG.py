@@ -30,11 +30,11 @@ def handle_NOTICE(irc, args):
         chanObj.buffer.pop(0)
     chanObj.buffer.append((time.time(), _format))
 
-    regex = u"(?:{})(.*?)(?:$|\s+)(.*)".format(irc.prefix)
+    regex = r"(?:{})(.*?)(?:$|\s+)(.*)".format(irc.prefix)
     m = re.match(regex, text)
     if m:
         command, cmdargs = m.groups()
-        if command in bot_commands.keys():
+        if command in bot_commands:
             log.info("(%s) Calling command %r with args %r", irc.netname, command, cmdargs)
             irc.executor.submit(bot_commands[command], irc, chan, args, cmdargs)
 

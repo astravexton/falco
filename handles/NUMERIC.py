@@ -14,7 +14,7 @@ def handle_001(irc, args):
             if irc.channels[chan]["autojoin"]:
                 irc.send("JOIN {}".format(chan))
         except KeyError:
-            log.warn("(%s) %s does not have autojoin key, adding autojoin = False", irc.netname, chan)
+            log.warning("(%s) %s does not have autojoin key, adding autojoin = False", irc.netname, chan)
             irc.channels[chan]["autojoin"] = False
     for chan in irc.autojoin:
         irc.send("JOIN {}".format(chan))
@@ -190,7 +190,7 @@ def handle_396(irc, args):
 def handle_433(irc, args):
 
     getNewNick(irc, args.args[1])
-    if args.args == "Nickname is registered to someone else":
+    if args.args[-1] == "Nickname is registered to someone else":
         irc.send("PRIVMSG NickServ :identify {}".format(irc.conf.get("nickserv_password")))
 
     elif args.args[-1] == "Nickname is already in use.":
